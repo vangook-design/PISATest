@@ -35,27 +35,31 @@
       box-shadow: 0 10px 35px 0 rgba(30, 41, 59, 0.12);
     }
     
-    /* สไตล์คาราโอเกะท่อนสั้น */
-    .karaoke-word {
-      display: inline-block;
-      padding: 4px 8px;
-      margin: 3px 4px;
-      border-radius: 10px;
-      transition: all 0.25s ease;
-      color: #334155;
-    }
-    .karaoke-word.active {
-      background-color: #fef08a;
-      color: #854d0e;
-      transform: scale(1.12);
-      box-shadow: 0 4px 12px rgba(250, 204, 21, 0.45);
-      font-weight: 800;
-    }
-    .karaoke-word.passed {
-      background-color: #dcfce7;
-      color: #166534;
-      font-weight: 700;
-    }
+    /* สไตล์ข้อความบทอ่านทั้งหมด */
+.passage-phrase {
+  display: inline;
+  color: #000000; /* สีดำเริ่มต้นตามที่ต้องการ */
+  padding: 2px 4px;
+  margin: 0 2px;
+  border-radius: 6px;
+  transition: all 0.25s ease;
+}
+
+/* วรรคปัจจุบันที่กำลังรอให้อ่าน (มีไฮไลต์สีเหลืองอ่อนนำสายตา) */
+.passage-phrase.active {
+  background-color: #fef08a;
+  color: #854d0e;
+  border-bottom: 3px solid #eab308;
+  font-weight: 800;
+}
+
+/* วรรคที่อ่านถูกต้องแล้ว เปลี่ยนเป็นสีเขียวเข้ม */
+.passage-phrase.passed {
+  color: #16a34a !important; /* สีเขียว */
+  background-color: transparent !important;
+  font-weight: 700;
+  border-bottom: none;
+}
 
     .voice-choice-card {
       transition: all 0.3s ease;
@@ -234,30 +238,32 @@
 
       <div class="flex-grow flex flex-col p-4 md:p-6 overflow-y-auto justify-between bg-slate-50/40">
         
-        <!-- ส่วนที่ 1: กล่องคาราโอเกะแบบตัดท่อนสั้น (Chunked Phrased Karaoke) -->
-        <div id="passage-container-box" class="bg-white p-6 md:p-8 rounded-3xl border border-slate-200/80 shadow-sm relative text-center">
-          <div class="flex justify-between items-center mb-4 border-b pb-2 text-xs">
-            <span class="font-bold text-slate-400"><i class="fa-solid fa-layer-group text-indigo-500 mr-1.5"></i>อ่านออกเสียงทีละท่อนข้อความสั้น (อ่านถูกจะขยับไปท่อนถัดไป)</span>
-            <div id="chunk-indicator-dots" class="flex items-center space-x-1.5">
-              <!-- จุดบอกความคืบหน้าท่อนข้อความ -->
-            </div>
-          </div>
-          
-          <!-- ข้อความท่อนปัจจุบันที่ต้องอ่าน -->
-          <div class="py-6 px-4 bg-indigo-50/40 rounded-2xl border border-indigo-100 min-h-[120px] flex items-center justify-center">
-            <div id="current-chunk-container" class="text-2xl md:text-3xl leading-relaxed text-slate-800 tracking-wide font-medium"></div>
-          </div>
+<!-- กล่องแสดงเนื้อหาบทความทั้งหมดบนหน้าจอ -->
+<div id="passage-container-box" class="bg-white p-6 md:p-8 rounded-3xl border border-slate-200/80 shadow-sm relative text-left">
+  <div class="flex justify-between items-center mb-3 border-b pb-2 text-xs">
+    <span class="font-bold text-slate-500">
+      <i class="fa-solid fa-book-open text-indigo-500 mr-1.5"></i>อ่านออกเสียงตามเนื้อหาบทความ (วรรคที่อ่านถูกต้องแล้วจะเปลี่ยนเป็นสีเขียว)
+    </span>
+    <span id="karaoke-progress" class="font-black text-emerald-600 text-sm">0%</span>
+  </div>
+  
+  <!-- พื้นที่แสดงบทความยาวทั้งหมด ต่อเนื่องกันเป็นย่อหน้าเดียว -->
+  <div class="p-5 bg-slate-50/60 rounded-2xl border border-slate-100 min-h-[140px]">
+    <div id="full-passage-container" class="text-xl md:text-2xl leading-loose text-slate-900 tracking-wide font-medium select-none">
+      <!-- ข้อความทั้งหมดพร้อมวรรคสั้นๆ จะถูกเรนเดอร์ต่อเนื่องที่นี่ -->
+    </div>
+  </div>
 
-          <div class="mt-4 pt-3 border-t flex items-center justify-between text-xs text-slate-400">
-            <div class="flex items-center space-x-2">
-              <span id="mic-pulse" class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
-              <span id="speech-live-text" class="italic text-slate-500 font-sans">กำลังฟังเสียงอ่านท่อนนี้...</span>
-            </div>
-            <button onclick="playHelpWordAudio()" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs flex items-center gap-1">
-              <i class="fa-solid fa-circle-question"></i> ฟังเสียงคำที่ติด
-            </button>
-          </div>
-        </div>
+  <div class="mt-4 pt-3 border-t flex items-center justify-between text-xs text-slate-400">
+    <div class="flex items-center space-x-2">
+      <span id="mic-pulse" class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+      <span id="speech-live-text" class="italic text-slate-500 font-sans">กำลังฟังเสียงอ่าน...</span>
+    </div>
+    <button onclick="playHelpWordAudio()" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs flex items-center gap-1">
+      <i class="fa-solid fa-circle-question"></i> ฟังเสียงวรรคที่ติด
+    </button>
+  </div>
+</div>
 
         <!-- ส่วนที่ 2: กล่องคำถามคิดวิเคราะห์ PISA 4 ข้อ (Voice-Answered) -->
         <div id="pisa-question-panel" class="bg-gradient-to-r from-slate-900 to-indigo-950 text-white p-5 md:p-6 rounded-3xl shadow-xl mt-4 hidden transform transition duration-500">
@@ -896,41 +902,153 @@
     // =========================================================================
     // ด่านที่ 1: คาราโอเกะแบบตัดท่อนสั้น (Chunked Phrased Karaoke)
     // =========================================================================
-    function initChunkedKaraokeGame() {
-      timeRemaining = 105;
-      readingCompleted = false;
-      currentChunkIndex = 0;
-      currentQuestionIndex = 0;
-      answeredCorrectCount = 0;
-      isWaitingForQuestionAnswer = false;
-      antiCheatFlags = [];
+    // ตัวแปรเก็บข้อมูลวรรคสั้นทั้งหมดในบทความ
+let allPassagePhrases = [];
+let currentPhrasePointer = 0;
 
-      document.getElementById('ui-passage-title').textContent = currentPassage.title || "บทอ่าน";
-      document.getElementById('pisa-question-panel').classList.add('hidden');
-      document.getElementById('passage-container-box').classList.remove('hidden');
+function initChunkedKaraokeGame() {
+  timeRemaining = 105;
+  readingCompleted = false;
+  currentPhrasePointer = 0;
+  currentQuestionIndex = 0;
+  answeredCorrectCount = 0;
+  isWaitingForQuestionAnswer = false;
+  antiCheatFlags = [];
 
-      // บทอ่านแบ่งเป็นท่อนสั้นๆ 3-4 ท่อน
-      passageChunks = currentPassage.contentChunks || ["ในสวนหลังบ้าน", "มีมดแดงฝูงหนึ่ง", "ช่วยกันขนอาหาร"];
-      renderChunkIndicatorDots();
-      loadCurrentChunk(0);
+  document.getElementById('ui-passage-title').textContent = currentPassage.title || "บทอ่าน";
+  document.getElementById('pisa-question-panel').classList.add('hidden');
+  document.getElementById('passage-container-box').classList.remove('hidden');
+  document.getElementById('karaoke-progress').textContent = "0%";
 
-      showView('game');
-      startLightweightAudioMonitor();
+  // 1. ดึงข้อความทั้งหมดมาซอยเป็น "วรรคสั้นๆ" (ความยาว 2-4 คำต่อวรรค เพื่อให้ตรวจจับเสียงได้แม่นยำ ไม่ยาวเกินไป)
+  allPassagePhrases = buildShortPhrases(currentPassage);
 
-      if (recognition) {
-        try { recognition.start(); } catch(e) {}
-      }
+  // 2. เรนเดอร์ข้อความทั้งหมดลงบนหน้าจอพร้อมกัน โดยเริ่มต้นเป็นตัวหนังสือสีดำทั้งหมด
+  const container = document.getElementById('full-passage-container');
+  container.innerHTML = '';
+  allPassagePhrases.forEach((p, idx) => {
+    const span = document.createElement('span');
+    span.id = `phrase-token-${idx}`;
+    span.className = "passage-phrase"; // เริ่มต้นเป็นสีดำตาม CSS
+    span.textContent = p.text + " ";
+    container.appendChild(span);
+  });
 
-      gameTimer = setInterval(() => {
-        timeRemaining--;
-        const m = Math.floor(timeRemaining / 60), s = timeRemaining % 60;
-        document.getElementById('ui-timer').textContent = `${m}:${s.toString().padStart(2, '0')}`;
-        if (timeRemaining <= 0) {
-          clearInterval(gameTimer);
-          finalizePisaAssessment();
-        }
-      }, 1000);
+  // ทำไฮไลต์แถบสีนำสายตาที่วรรคแรก
+  highlightCurrentPhrase(0);
+
+  showView('game');
+  startLightweightAudioMonitor();
+
+  if (recognition) {
+    try { recognition.start(); } catch(e) {}
+  }
+
+  gameTimer = setInterval(() => {
+    timeRemaining--;
+    const m = Math.floor(timeRemaining / 60), s = timeRemaining % 60;
+    document.getElementById('ui-timer').textContent = `${m}:${s.toString().padStart(2, '0')}`;
+    if (timeRemaining <= 0) {
+      clearInterval(gameTimer);
+      finalizePisaAssessment();
     }
+  }, 1000);
+}
+
+// ฟังก์ชันย่อย: แบ่งเนื้อหาออกเป็นวรรคสั้นๆ (ตัดตามเครื่องหมาย | หรือตัดทุกๆ 2-3 คำ)
+function buildShortPhrases(passage) {
+  let chunks = [];
+  if (passage.contentChunks && passage.contentChunks.length > 0) {
+    // ถ้าในชีตแบ่งวรรคด้วย | ไว้อยู่แล้ว
+    chunks = passage.contentChunks;
+  } else {
+    // ถ้าเป็นข้อความยาวพารากราฟเดียว ให้ตัดย่อยทุกๆ 3 คำ
+    const words = (passage.fullContent || passage.content || "").split(/\s+/).filter(w => w.length > 0);
+    for (let i = 0; i < words.length; i += 3) {
+      chunks.push(words.slice(i, i + 3).join(" "));
+    }
+  }
+
+  return chunks.map((phraseText, idx) => ({
+    index: idx,
+    text: phraseText,
+    clean: cleanThaiWord(phraseText),
+    passed: false
+  }));
+}
+
+// ไฮไลต์บอกตำแหน่งวรรคที่ต้องอ่านปัจจุบัน
+function highlightCurrentPhrase(idx) {
+  if (idx >= allPassagePhrases.length) return;
+  document.querySelectorAll('.passage-phrase').forEach(el => el.classList.remove('active'));
+  const activeSpan = document.getElementById(`phrase-token-${idx}`);
+  if (activeSpan) {
+    activeSpan.classList.add('active');
+  }
+}
+
+// ตรวจจับเสียงเทียบกับ "เฉพาะวรรคสั้นปัจจุบัน"
+function checkCurrentChunkVoiceMatching(spokenText) {
+  if (currentPhrasePointer >= allPassagePhrases.length) return;
+
+  const targetPhrase = allPassagePhrases[currentPhrasePointer];
+  const sim = getPhoneticSimilarity(targetPhrase.clean, spokenText);
+
+  // ถ้านักเรียนอ่านตรงกับวรรคสั้นปัจจุบันตั้งแต่ 65% ขึ้นไป
+  if (sim >= 0.65) {
+    passCurrentPhrase();
+  } else if (currentPhrasePointer + 1 < allPassagePhrases.length) {
+    // มองล่วงหน้า 1 วรรค กรณีเด็กอ่านเร็วควบ 2 วรรคติดกัน
+    const nextPhrase = allPassagePhrases[currentPhrasePointer + 1];
+    if (getPhoneticSimilarity(nextPhrase.clean, spokenText) >= 0.70) {
+      passCurrentPhrase();
+      passCurrentPhrase();
+    }
+  }
+}
+
+// เมื่ออ่านวรรคถูกต้อง ให้เปลี่ยนวรรคนั้นเป็น "สีเขียว" และเลื่อนเป้าหมายไปวรรคถัดไป
+function passCurrentPhrase() {
+  if (currentPhrasePointer >= allPassagePhrases.length) return;
+
+  const targetPhrase = allPassagePhrases[currentPhrasePointer];
+  targetPhrase.passed = true;
+
+  const span = document.getElementById(`phrase-token-${currentPhrasePointer}`);
+  if (span) {
+    span.classList.remove('active');
+    span.classList.add('passed'); // เปลี่ยนตัวหนังสือเป็นสีเขียวทันที
+  }
+
+  currentPhrasePointer++;
+  const percent = Math.round((currentPhrasePointer / allPassagePhrases.length) * 100);
+  document.getElementById('karaoke-progress').textContent = `${percent}%`;
+
+  // แอบแคปหลักฐานช็อตที่ 2 เมื่ออ่านผ่านครึ่งเรื่อง
+  if (currentPhrasePointer === Math.floor(allPassagePhrases.length / 2)) {
+    captureSilentEvidenceShot(2);
+  }
+
+  if (currentPhrasePointer < allPassagePhrases.length) {
+    highlightCurrentPhrase(currentPhrasePointer);
+  } else {
+    // อ่านครบทั้งบทความแล้ว ตัวหนังสือเขียวทั้งหน้าจอ ➔ ไปด่านคำถาม PISA
+    readingCompleted = true;
+    confetti({ particleCount: 70, spread: 60, origin: { y: 0.5 } });
+    setTimeout(() => {
+      startPisaVoiceQuestionsStage();
+    }, 600);
+  }
+}
+
+// ปุ่มฟังเสียงตัวอย่างวรรคที่อ่านไม่ออก
+function playHelpWordAudio() {
+  if (currentPhrasePointer >= allPassagePhrases.length) return;
+  const text = allPassagePhrases[currentPhrasePointer].text;
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'th-TH';
+  window.speechSynthesis.speak(utterance);
+}
 
     function renderChunkIndicatorDots() {
       const container = document.getElementById('chunk-indicator-dots');
