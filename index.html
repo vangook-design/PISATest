@@ -1191,64 +1191,74 @@
     }
 
     function handlePromptReadSuccess() {
-      pisaStageMode = "IDLE";
-      if (recognition) {
-        try { recognition.stop(); } catch(e) {}
-      }
+  // สลับโหมดเป็น IDLE ชั่วขณะเพื่อเคลียร์ค่า
+  pisaStageMode = "IDLE";
+  
+  // เล่นเสียงระฆังคู่ ปลดล็อกโจทย์ผ่าน
+  playAudioFeedback('prompt_pass');
 
-      // เล่นเสียงปลดล็อกโจทย์ผ่าน
-      playAudioFeedback('prompt_pass');
+  // เปลี่ยนโจทย์เป็นสีเขียว
+  const qBox = document.getElementById('pisa-question-box');
+  qBox.className = "p-3.5 bg-emerald-950/60 border-2 border-emerald-500 rounded-2xl mb-4";
+  document.getElementById('pisa-question-text').className = "text-base md:text-lg font-black leading-relaxed game-font text-emerald-300";
+  document.getElementById('pisa-question-text').innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 mr-1.5"></i> ${currentPassage.questions[currentQuestionIndex].questionText}`;
 
-      // เปลี่ยนสไตล์โจทย์เป็นสีเขียว
-      const qBox = document.getElementById('pisa-question-box');
-      qBox.className = "p-3.5 bg-emerald-950/60 border-2 border-emerald-500 rounded-2xl mb-4";
-      document.getElementById('pisa-question-text').className = "text-base md:text-lg font-black leading-relaxed game-font text-emerald-300";
-      document.getElementById('pisa-question-text').innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 mr-1.5"></i> ${currentPassage.questions[currentQuestionIndex].questionText}`;
+  // ปลดล็อกตัวเลือกคำตอบ 4 ข้อ
+  const choicesGrid = document.getElementById('pisa-choices-grid');
+  choicesGrid.className = "grid grid-cols-1 md:grid-cols-2 gap-3";
 
-      // ปลดล็อกตัวเลือกคำตอบ 4 ข้อ
-      const choicesGrid = document.getElementById('pisa-choices-grid');
-      choicesGrid.className = "grid grid-cols-1 md:grid-cols-2 gap-3";
+  document.getElementById('pisa-instruction-text').innerHTML = `<i class="fa-solid fa-microphone mr-1 text-emerald-400"></i>ขั้นตอนที่ 2: โจทย์ผ่านแล้ว! อ่านคำตอบสั้นๆ ที่ถูกต้องได้เลย`;
+  document.getElementById('pisa-guide-footer').textContent = "อ่านข้อความตัวเลือกคำตอบที่ถูกต้อง";
 
-      document.getElementById('pisa-instruction-text').innerHTML = `<i class="fa-solid fa-microphone mr-1 text-emerald-400"></i>ขั้นตอนที่ 2: โจทย์ผ่านแล้ว! อ่านออกเสียงคำตอบที่ถูกต้อง 1 ตัวเลือก`;
-      document.getElementById('pisa-guide-footer').textContent = "อ่านออกเสียงข้อความของตัวเลือกคำตอบที่ถูกต้อง (ไม่ต้องอ่านข้อ ก ข ค ง)";
-
-      // หน่วงเวลา 700ms ก่อนเริ่มเปิดไมค์รับฟังเสียงอ่านตัวเลือกคำตอบ
-      setTimeout(() => {
-        pisaStageMode = "READING_ANSWER";
-        if (recognition) {
-          try { recognition.start(); } catch(e) {}
-        }
-        document.getElementById('speech-live-text').textContent = "อ่านออกเสียงข้อความของตัวเลือกคำตอบได้เลย...";
-      }, 700);
-    }
-
+  // หน่วงเวลาสั้นๆ 500ms แล้วสลับไปโหมดรับเสียงคำตอบทันที (โดยไม่ต้อง restart ไมค์ให้ค้าง)
+  setTimeout(() => {
+    pisaStageMode = "READING_ANSWER";
+    document.getElementById('speech-live-text').textContent = "อ่านออกเสียงคำตอบได้เลย...";
+  }, 500);
+}
     // 2. ตรวจสอบการอ่านตัวเลือกคำตอบ (อ่านตัวเลือกคำตอบตรงๆ ไม่มี ก ข ค ง)
     function checkPisaVoiceAnswerMatching(spokenText) {
-      if (pisaStageMode !== "READING_ANSWER" || currentQuestionIndex >= currentPassage.questions.length) return;
+  if (pisaStageMode !== "READING_ANSWER" || currentQuestionIndex >= currentPassage.questions.length) return;
 
-      const cleanSpoken = cleanThaiWord(spokenText);
-      if (!cleanSpoken || cleanSpoken.length < 2) return;
+  const cleanSpoken = cleanThaiWord(spokenText);
+  if (!cleanSpoken || cleanSpoken.length < 2) return;
 
-      const qData = currentPassage.questions[currentQuestionIndex];
-      const correctChoiceText = cleanThaiWord(qData.choices[qData.correctIndex]);
+  const qData = currentPassage.questions[currentQuestionIndex];
+  const correctChoiceText = cleanThaiWord(qData.choices[qData.correctIndex]);
 
-      // ตรวจสอบกับตัวเลือกคำตอบที่ถูกต้องโดยตรง
-      const simCorrect = getPhoneticSimilarity(correctChoiceText, cleanSpoken);
+  // 1. ตรวจจับแบบความเหมือนทั้งประโยค (สำหรับคำสั้น)
+  const simCorrect = getPhoneticSimilarity(correctChoiceText, cleanSpoken);
 
-      if (simCorrect >= 0.65) {
-        handleQuestionSuccess(qData.correctIndex);
-      } else {
-        // ตรวจสอบว่าไปตรงกับตัวเลือกที่ผิดข้ออื่นหรือไม่
-        qData.choices.forEach((choice, idx) => {
-          if (idx !== qData.correctIndex) {
-            const simWrong = getPhoneticSimilarity(cleanThaiWord(choice), cleanSpoken);
-            if (simWrong >= 0.72) {
-              handleQuestionFailed(idx);
-            }
-          }
-        });
-      }
+  // 2. ตรวจจับแบบ Keyword Matching (หากเด็กพูดคำสำคัญในตัวเลือกถูกเกิน 60% ถือว่าตอบถูกทันที)
+  let keywordMatched = false;
+  // ดึงคำสำคัญจากตัวเลือกโดยตัดคำที่มีความยาวตั้งแต่ 2 พยางค์ขึ้นไป
+  const keywords = correctChoiceText.match(/[ก-๙]{3,}/g) || [correctChoiceText];
+  let matchedKwCount = 0;
+  keywords.forEach(kw => {
+    if (cleanSpoken.includes(kw) || getPhoneticSimilarity(kw, cleanSpoken) >= 0.70) {
+      matchedKwCount++;
     }
+  });
+  if (matchedKwCount >= Math.ceil(keywords.length * 0.5)) {
+    keywordMatched = true;
+  }
+
+  // หากอ่านถูก หรือพูดคีย์เวิร์ดสำคัญถูกต้อง
+  if (simCorrect >= 0.60 || keywordMatched) {
+    handleQuestionSuccess(qData.correctIndex);
+  } else {
+    // ตรวจสอบว่าไปตรงกับตัวเลือกที่ผิดข้ออื่นหรือไม่
+    qData.choices.forEach((choice, idx) => {
+      if (idx !== qData.correctIndex) {
+        const wrongText = cleanThaiWord(choice);
+        const simWrong = getPhoneticSimilarity(wrongText, cleanSpoken);
+        if (simWrong >= 0.70) {
+          handleQuestionFailed(idx);
+        }
+      }
+    });
+  }
+}
 
     function handleQuestionSuccess(correctIdx) {
       pisaStageMode = "IDLE";
