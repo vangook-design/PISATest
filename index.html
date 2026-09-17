@@ -3,7 +3,7 @@
 <!-- 
   =============================================================
   ระบบประเมินสมรรถนะการอ่านออกเสียงและการคิดวิเคราะห์แนว PISA (ป.3 - ป.6)
-  Next-Gen Thai-PMA PISA System (Passage Karaoke + Anti-Cheat + Face-Lock)
+  Next-Gen Thai-PMA PISA System (Voice-Answered 4-Step Challenge)
   
   ผู้พัฒนา: นายชาณัตถ์ รุ่งรัตน์
   =============================================================
@@ -35,7 +35,7 @@
       box-shadow: 0 10px 35px 0 rgba(30, 41, 59, 0.12);
     }
     
-    /* สไตล์ตัวอักษรคาราโอเกะ */
+    /* สไตล์คาราโอเกะบทอ่าน */
     .karaoke-word {
       display: inline-block;
       padding: 3px 6px;
@@ -47,7 +47,7 @@
     .karaoke-word.active {
       background-color: #fef08a;
       color: #854d0e;
-      transform: scale(1.1);
+      transform: scale(1.08);
       box-shadow: 0 2px 8px rgba(250, 204, 21, 0.4);
       font-weight: 800;
     }
@@ -74,6 +74,16 @@
     .face-oval-guide.invalid {
       border-color: #f43f5e;
     }
+
+    /* สไตล์ตัวเลือกคำถาม */
+    .voice-choice-card {
+      transition: all 0.3s ease;
+    }
+    .voice-choice-card.highlight-target {
+      border-color: #fbbf24;
+      background: rgba(251, 191, 36, 0.15);
+      transform: scale(1.02);
+    }
   </style>
 </head>
 <body class="text-slate-800 min-h-screen flex flex-col justify-between">
@@ -89,7 +99,7 @@
           </div>
           <div>
             <h2 class="text-base sm:text-lg font-black game-font leading-tight text-yellow-400">ระบบประเมินสมรรถนะการอ่านออกเสียงและการคิดวิเคราะห์แนว PISA (ป.3 - ป.6)</h2>
-            <p class="text-[10px] text-slate-300 mt-0.5">Next-Gen Thai-PMA Karaoke Platform • เพื่อการคัดกรองและส่งเสริมการอ่านอย่างเที่ยงตรง</p>
+            <p class="text-[10px] text-slate-300 mt-0.5">Next-Gen Thai-PMA Karaoke Platform • ตอบคำถามต่อเนื่อง 4 ข้อด้วยเสียงอ่าน</p>
           </div>
         </div>
         
@@ -138,7 +148,7 @@
                 <i class="fa-solid fa-chart-line text-indigo-600 text-base"></i>
                 <span>กราฟเส้นแสดงพัฒนาการสมรรถนะการอ่าน PISA เฉลี่ย ระดับชั้น ป.3 - ป.6</span>
               </h3>
-              <p class="text-[11px] text-slate-400 mt-0.5">วิเคราะห์เปรียบเทียบแนวโน้มคะแนนเฉลี่ย (ความคล่อง + การคิดวิเคราะห์ เต็ม 10 คะแนน)</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">วิเคราะห์เปรียบเทียบแนวโน้มคะแนนเฉลี่ยจากการคิดวิเคราะห์และอ่านตอบ 4 ข้อ (เต็ม 10 คะแนน)</p>
             </div>
             <span class="text-[10px] font-extrabold bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full border border-indigo-100">
               <i class="fa-solid fa-award mr-1"></i>PISA Literacy Growth
@@ -197,7 +207,7 @@
 
       <div>
         <h2 class="text-xl font-black text-slate-800 game-font">จัดใบหน้าให้อยู่กึ่งกลางกล้อง</h2>
-        <p class="text-xs text-slate-500 mt-0.5">ระบบจะตรวจสอบให้ใบหน้าตรงกรอบก่อนเริ่มอ่าน เพื่อความโปร่งใสในการประเมิน</p>
+        <p class="text-xs text-slate-500 mt-0.5">ระบบจะล็อกตำแหน่งใบหน้า หากหลุดจากกรอบระหว่างสอบ ระบบจะยุติทันที</p>
       </div>
       
       <!-- วิดีโอกล้องพร้อมกรอบวงรีสีเขียว -->
@@ -226,9 +236,9 @@
       </button>
     </section>
 
-    <!-- VIEW 4: หน้า GAME PLAY (Passage Karaoke + Unlock PISA Question) -->
+    <!-- VIEW 4: หน้า GAME PLAY (Passage Karaoke + Voice-Answered 4 Questions) -->
     <section id="view-game" class="view-section hidden w-full max-w-4xl h-[92vh] glass-panel rounded-3xl animate-fadeIn flex flex-col overflow-hidden relative">
-      <!-- Header -->
+      <!-- Header และสถานะการตรวจจับใบหน้า Real-time -->
       <div class="w-full bg-slate-900 text-white p-3 md:p-4 flex justify-between items-center z-20 shadow-md">
         <div class="flex flex-col">
           <span class="text-[10px] text-indigo-300 font-bold uppercase tracking-wider">ด่านประเมินสมรรถนะ PISA</span>
@@ -236,15 +246,15 @@
         </div>
         
         <div class="flex items-center space-x-3">
-          <!-- ตัวจับเสียงรบกวน/เสียงกระซิบ -->
-          <div id="anti-cheat-indicator" class="flex items-center space-x-1.5 bg-emerald-950/60 border border-emerald-500/40 px-3 py-1 rounded-xl text-[11px] text-emerald-300">
-            <i class="fa-solid fa-shield-halved text-emerald-400"></i>
-            <span id="anti-cheat-status">ตรวจจับเสียง: ปกติ</span>
+          <!-- สถานะกล้องล็อกใบหน้า Real-time -->
+          <div class="flex items-center space-x-1.5 bg-slate-800 px-2.5 py-1 rounded-xl text-[10px] border border-slate-700">
+            <span id="game-face-indicator" class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span id="game-face-text" class="text-slate-300 font-bold">ใบหน้าตรงกรอบ</span>
           </div>
 
           <div class="flex flex-col items-center bg-slate-800 px-3.5 py-1 rounded-xl border border-slate-700">
             <span class="text-[9px] text-slate-400 font-bold uppercase"><i class="fa-solid fa-clock mr-1"></i>เวลา</span>
-            <span id="ui-timer" class="text-xl md:text-2xl font-black game-font text-white leading-none">1:30</span>
+            <span id="ui-timer" class="text-xl md:text-2xl font-black game-font text-white leading-none">1:45</span>
           </div>
         </div>
       </div>
@@ -252,44 +262,46 @@
       <div class="flex-grow flex flex-col p-4 md:p-6 overflow-y-auto justify-between bg-slate-50/40">
         
         <!-- ส่วนที่ 1: กล่องบทอ่านต่อเนื่องคาราโอเกะ -->
-        <div class="bg-white p-5 md:p-6 rounded-3xl border border-slate-200/80 shadow-sm relative">
-          <div class="flex justify-between items-center mb-3 border-b pb-2">
-            <span class="text-xs font-bold text-slate-400"><i class="fa-solid fa-volume-high text-indigo-500 mr-1.5"></i>อ่านออกเสียงตามข้อความให้ชัดเจน (ระบบจะไฮไลต์คำที่อ่านถูกต้อง)</span>
+        <div id="passage-container-box" class="bg-white p-5 md:p-6 rounded-3xl border border-slate-200/80 shadow-sm relative">
+          <div class="flex justify-between items-center mb-2.5 border-b pb-2">
+            <span class="text-xs font-bold text-slate-500"><i class="fa-solid fa-book-open text-indigo-500 mr-1.5"></i>อ่านออกเสียงบทอ่านให้ถูกต้องตามแถบไฮไลต์</span>
             <span id="karaoke-progress" class="text-xs font-black text-indigo-600">0%</span>
           </div>
           
-          <div id="passage-karaoke-container" class="text-lg md:text-2xl leading-relaxed text-slate-700 tracking-wide select-none font-medium">
-            <!-- ข้อความคาราโอเกะจะถูกแทรกที่นี่ -->
-          </div>
+          <div id="passage-karaoke-container" class="text-lg md:text-2xl leading-relaxed text-slate-700 tracking-wide select-none font-medium"></div>
 
-          <!-- แถบคลื่นเสียง Transcript Real-time -->
-          <div class="mt-4 pt-3 border-t flex items-center justify-between text-xs text-slate-400">
+          <div class="mt-3.5 pt-2.5 border-t flex items-center justify-between text-xs text-slate-400">
             <div class="flex items-center space-x-2">
-              <span id="mic-pulse" class="w-3 h-3 rounded-full bg-rose-500 animate-pulse"></span>
+              <span id="mic-pulse" class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
               <span id="speech-live-text" class="italic text-slate-500 font-sans">กำลังฟังเสียงอ่าน...</span>
             </div>
             <button onclick="playHelpWordAudio()" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs flex items-center gap-1">
-              <i class="fa-solid fa-circle-question"></i> ฟังตัวอย่างคำที่ติด
+              <i class="fa-solid fa-circle-question"></i> ฟังเสียงสะกด
             </button>
           </div>
         </div>
 
-        <!-- ส่วนที่ 2: กล่องคำถามคิดวิเคราะห์ PISA (จะปลดล็อกเมื่ออ่านจบ) -->
-        <div id="pisa-question-panel" class="bg-gradient-to-r from-indigo-900 to-purple-900 text-white p-5 md:p-6 rounded-3xl shadow-xl mt-4 hidden transform transition duration-500">
-          <div class="flex items-center justify-between mb-3 border-b border-indigo-700 pb-2">
-            <span class="text-xs font-bold text-yellow-400 uppercase tracking-wider flex items-center gap-1.5">
-              <i class="fa-solid fa-brain"></i> คำถามสมรรถนะ PISA (<span id="pisa-competency-badge">ความเข้าใจและการคิดวิเคราะห์</span>)
-            </span>
-            <span class="text-[10px] bg-yellow-400/20 text-yellow-300 px-2.5 py-0.5 rounded-full font-bold">เลือกคำตอบที่ถูกต้องที่สุด</span>
+        <!-- ส่วนที่ 2: กล่องคำถามคิดวิเคราะห์ PISA (ตอบด้วยเสียงทีละข้อ 1 -> 4) -->
+        <div id="pisa-question-panel" class="bg-gradient-to-r from-slate-900 to-indigo-950 text-white p-5 md:p-6 rounded-3xl shadow-xl mt-4 hidden transform transition duration-500">
+          <div class="flex items-center justify-between mb-3 border-b border-indigo-800/80 pb-2">
+            <div class="flex items-center space-x-2">
+              <span id="pisa-step-badge" class="bg-yellow-400 text-slate-950 px-2.5 py-0.5 rounded-full font-black text-xs">ข้อที่ 1/4</span>
+              <span id="pisa-competency-badge" class="text-xs font-bold text-yellow-300">สมรรถนะ PISA</span>
+            </div>
+            <span class="text-[11px] text-indigo-200 animate-pulse font-bold"><i class="fa-solid fa-microphone mr-1"></i>ออกเสียงอ่านตัวเลือกคำตอบที่ถูกต้อง</span>
           </div>
 
-          <h3 id="pisa-question-text" class="text-base md:text-lg font-extrabold mb-4 leading-relaxed game-font text-white">
-            คำถามกำลังโหลด...
+          <h3 id="pisa-question-text" class="text-base md:text-lg font-black mb-4 leading-relaxed game-font text-white">
+            คำถาม...
           </h3>
 
-          <!-- ตัวเลือก 4 ช้อยส์ -->
-          <div id="pisa-choices-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <!-- ช้อยส์จะถูกเรนเดอร์โดย JS -->
+          <!-- ตัวเลือก 4 ข้อที่ต้องอ่านออกเสียง -->
+          <div id="pisa-choices-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+
+          <!-- ตัวจับความคืบหน้า 4 ข้อ -->
+          <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center text-xs">
+            <span class="text-slate-400">ตอบถูกข้อ 1 จึงจะไปข้อ 2, 3, 4 (ข้อละ 2.5 คะแนน รวม 100%)</span>
+            <span id="pisa-current-score-text" class="font-extrabold text-yellow-400">คะแนนสะสม: 0 / 10</span>
           </div>
         </div>
 
@@ -301,23 +313,18 @@
       <div id="result-icon-container" class="text-6xl mt-2"></div>
       <div>
         <h2 id="result-title" class="text-3xl font-black game-font text-slate-800">ผลการประเมิน PISA</h2>
-        <p id="result-subtitle" class="text-xs text-slate-500 font-bold mt-1">สรุปสมรรถนะการอ่านออกเสียงและการคิดวิเคราะห์</p>
+        <p id="result-subtitle" class="text-xs text-slate-500 font-bold mt-1">สรุปผลจากการคิดวิเคราะห์และอ่านตอบคำถามต่อเนื่อง 4 ข้อ</p>
       </div>
 
       <div class="grid grid-cols-2 gap-3 w-full text-left">
         <div class="bg-white/70 p-3.5 rounded-2xl border border-slate-100">
-          <span class="text-[10px] text-slate-400 font-bold block uppercase">การอ่านออกเสียงบทอ่าน</span>
-          <strong id="result-read-score" class="text-xl font-black text-indigo-600">0/5 คะแนน</strong>
+          <span class="text-[10px] text-slate-400 font-bold block uppercase">คะแนนสมรรถนะ PISA</span>
+          <strong id="result-score-text" class="text-2xl font-black text-indigo-600">0/10 คะแนน</strong>
         </div>
         <div class="bg-white/70 p-3.5 rounded-2xl border border-slate-100">
-          <span class="text-[10px] text-slate-400 font-bold block uppercase">การคิดวิเคราะห์ PISA</span>
-          <strong id="result-pisa-score" class="text-xl font-black text-emerald-600">0/5 คะแนน</strong>
+          <span class="text-[10px] text-slate-400 font-bold block uppercase">ความสำเร็จคิดเป็น</span>
+          <strong id="result-percent-text" class="text-2xl font-black text-emerald-600">0%</strong>
         </div>
-      </div>
-
-      <!-- สถานะความโปร่งใสและเสียงแทรก -->
-      <div id="result-anti-cheat-box" class="w-full p-2.5 rounded-xl text-xs font-bold text-center border">
-        ตรวจสอบเสียงแทรก: ปกติ
       </div>
 
       <div class="w-full space-y-2.5">
@@ -354,7 +361,7 @@
           <i class="fa-solid fa-user-shield text-yellow-400"></i>
           <div>
             <h2 class="text-sm font-bold game-font leading-none" id="teacher-welcome-text">ระบบคุณครู</h2>
-            <p class="text-[9px] text-slate-300 mt-1">รายงานผลการอ่านรายบุคคล • ตรวจสอบ Flag เสียงแทรก • พิมพ์รายงาน PDF</p>
+            <p class="text-[9px] text-slate-300 mt-1">รายงานผลการอ่านรายบุคคล • ตรวจสอบ Flag การสอบ • พิมพ์รายงาน PDF</p>
           </div>
         </div>
         <button onclick="logoutTeacher()" class="bg-rose-700 hover:bg-rose-600 px-3 py-1.5 rounded-xl text-[10px] font-bold transition">
@@ -375,7 +382,6 @@
           </button>
         </div>
 
-        <!-- ตารางประวัติรายบุคคล -->
         <div id="teacher-panel-history" class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-3">
             <h3 class="font-bold text-slate-700 text-xs flex items-center gap-1.5">
@@ -402,12 +408,10 @@
                   <th class="p-3">รหัส</th>
                   <th class="p-3">ชื่อ-นามสกุล</th>
                   <th class="p-3 text-center">ชั้น</th>
-                  <th class="p-3 text-center">คะแนนอ่าน</th>
-                  <th class="p-3 text-center">คะแนนPISA</th>
-                  <th class="p-3 text-center">รวม</th>
+                  <th class="p-3 text-center">คะแนนรวม</th>
+                  <th class="p-3 text-center">ความสำเร็จ</th>
                   <th class="p-3 text-center">เกณฑ์</th>
-                  <th class="p-3 text-center">การตรวจสอบ</th>
-                  <th class="p-3 text-center">เสียงตรวจ</th>
+                  <th class="p-3 text-center">รอบที่</th>
                   <th class="p-3 text-center">รายงาน</th>
                 </tr>
               </thead>
@@ -416,7 +420,6 @@
           </div>
         </div>
 
-        <!-- ตารางคงค้าง -->
         <div id="teacher-panel-unscreened" class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm hidden">
           <div class="overflow-x-auto max-h-[55vh] rounded-xl border border-slate-100">
             <table class="w-full text-left border-collapse text-xs">
@@ -438,14 +441,17 @@
 
   </main>
 
-  <footer class="fixed bottom-1 left-2 text-[10px] text-slate-500 font-semibold p-1.5 bg-white/70 backdrop-blur-md rounded-full shadow-sm flex items-center space-x-2">
-    <span>ระบบ Thai-PMA PISA System</span>
+  <!-- เครดิตผู้พัฒนาและระบบนับจำนวนผู้ใช้งานสะสม จัดกึ่งกลางหน้าจอด้านล่าง -->
+  <footer class="fixed bottom-2 left-1/2 transform -translate-x-1/2 text-[11px] text-slate-600 font-semibold py-1.5 px-4 bg-white/80 backdrop-blur-md rounded-full shadow-sm flex items-center space-x-2 border border-white/60 z-30 whitespace-nowrap">
+    <span class="font-bold text-indigo-900">ระบบประเมินสมรรถนะการอ่านแนว PISA (Thai-PMA)</span>
     <span class="text-slate-300">|</span>
-    <span>พัฒนาโดย: นายชาณัตถ์ รุ่งรัตน์</span>
+    <span>พัฒนาโดย: <strong class="text-slate-800">นายชาณัตถ์ รุ่งรัตน์</strong></span>
+    <span class="text-slate-300">|</span>
+    <span class="text-indigo-600 font-bold"><i class="fa-solid fa-users text-amber-500 mr-1"></i>เข้าใช้งาน: <strong id="footer-visitor-count">0</strong> ครั้ง</span>
   </footer>
 
   <!-- ========================================================================= -->
-  <!-- JAVASCRIPT LOGIC (KARAOKE + ANTI-CHEAT + FACE CHECK + PISA ENGINE) -->
+  <!-- JAVASCRIPT LOGIC (STRICT FACE-LOCK + 4-STEP VOICE ANSWERED PISA) -->
   <!-- ========================================================================= -->
   <script>
     const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzCCReThqotdBWGgK5NNH2dTJdtcV_4CsUNE_iVps1U8ELI38wJDCFvrZVZIostTZIGqA/exec"; 
@@ -455,89 +461,72 @@
     let currentStudent = null;
     let currentPassage = null;
     let cameraStream = null;
-    let audioStream = null;
     let capturedPhotoBase64 = null;
-    let capturedAudioBase64 = null;
     
-    // Karaoke Engine Variables
+    // สถานะคาราโอเกะ
     let passageWordsArray = [];
     let currentWordPointer = 0;
     let readingCompleted = false;
-    let readScore = 0;
-    let pisaScore = 0;
 
-    // Speech & Audio Monitor (Anti-Cheat)
+    // สถานะคำถาม 4 ข้อ (Voice-Answered)
+    let currentQuestionIndex = 0; // 0, 1, 2, 3
+    let answeredCorrectCount = 0; // ตอบถูกสะสม
+    let isWaitingForQuestionAnswer = false;
+
+    // Speech & Timer
     let recognition = null;
     let isListening = false;
     let gameTimer = null;
-    let timeRemaining = 90;
-    let audioCtx = null;
-    let analyserNode = null;
-    let audioCheckInterval = null;
-    let antiCheatFlags = [];
+    let timeRemaining = 105;
 
-    // Face Lock Variables
-    let faceCheckTimer = null;
-    let isFaceValid = false;
+    // ระบบตรวจจับใบหน้าตลอดการทดสอบ (Strict Face-Lock)
+    let faceTrackingInterval = null;
+    let faceOutOfBoundSeconds = 0;
 
     // Caches
     let allStudentsCached = [];
     let dashboardDataCache = [];
     let roundStatusDataCache = null;
     let roundsChartInstance = null;
-    
- // =========================================================================
-// Thai-PMA Phonetic Engine (Protected Module)
-// =========================================================================
-(function(_0x1a2b){
-  const _0x5c4d = [
-    "\x74\x72\x69\x6d", "\x72\x65\x70\x6c\x61\x63\x65", "\x73\x70\x6c\x69\x74", 
-    "\x6c\x65\x6e\x67\x74\x68", "\x6a\x6f\x69\x6e", "\x69\x6e\x63\x6c\x75\x64\x65\x73", "\x66\x69\x6c\x6c", "\x6d\x61\x70", "\x6d\x69\x6e", "\x6d\x61\x78"
-  ];
-  
-  const _0x3e1f = {
-    '\u0e02':'\u0e04','\u0e06':'\u0e04','\u0e09':'\u0e0a','\u0e0c':'\u0e0a','\u0e0b':'\u0e2a',
-    '\u0e28':'\u0e2a','\u0e29':'\u0e2a','\u0e10':'\u0e17','\u0e11':'\u0e17','\u0e12':'\u0e17',
-    '\u0e16':'\u0e17','\u0e18':'\u0e17','\u0e0e':'\u0e14','\u0e0f':'\u0e14','\u0e1c':'\u0e1e',
-    '\u0e20':'\u0e1e','\u0e1d':'\u0e1f','\u0e0d':'\u0e22','\u0e2c':'\u0e25','\u0e23':'\u0e25',
-    '\u0e2e':'\u0e2b','\u0e13':'\u0e19'
-  };
 
-  function _0x4d8a(_0x2f91) {
-    if (!_0x2f91) return "";
-    let _0x1c3e = _0x2f91[_0x5c4d[0]]()[_0x5c4d[1]](/[\s\-\_\.\,\?]/g, "")[_0x5c4d[1]](/[ก-ฮ]์/g, "");
-    _0x1c3e = _0x1c3e[_0x5c4d[1]](/[่้๊๋]/g, "")[_0x5c4d[1]](/ใ/g, "ไ");
-    _0x1c3e = _0x1c3e[_0x5c4d[1]](/ห([งญนมอียรลว])/g, "$1")[_0x5c4d[1]](/อ(ย)/g, "$1");
-    _0x1c3e = _0x1c3e[_0x5c4d[1]](/([ก-ฮ])([รล])([ะ-ูเ-ไโ])/g, "$1$3")[_0x5c4d[1]](/([เ-ไโ])([ก-ฮ])([รล])/g, "$1$2");
-    let _0x98ab = _0x1c3e[_0x5c4d[2]]("");
-    for (let _0x77ef = 0; _0x77ef < _0x98ab[_0x5c4d[3]]; _0x77ef++) {
-      if (_0x3e1f[_0x98ab[_0x77ef]]) _0x98ab[_0x77ef] = _0x3e1f[_0x98ab[_0x77ef]];
-    }
-    return _0x98ab[_0x5c4d[4]]("");
-  }
-
-  _0x1a2b["getPhoneticSimilarity"] = function(_0x55aa, _0x66bb) {
-    const _0x1111 = _0x4d8a(_0x55aa);
-    const _0x2222 = _0x4d8a(_0x66bb);
-    if (_0x1111[_0x5c4d[3]] === 0 || _0x2222[_0x5c4d[3]] === 0) return 0;
-    if (_0x1111 === _0x2222) return 1.0;
-    if (_0x2222[_0x5c4d[5]](_0x1111)) return 0.9;
-    
-    const _0x3333 = Array(_0x2222[_0x5c4d[3]] + 1)[_0x5c4d[6]](null)[_0x5c4d[7]](() => Array(_0x1111[_0x5c4d[3]] + 1)[_0x5c4d[6]](null));
-    for (let _0x4444 = 0; _0x4444 <= _0x1111[_0x5c4d[3]]; _0x4444++) _0x3333[0][_0x4444] = _0x4444;
-    for (let _0x5555 = 0; _0x5555 <= _0x2222[_0x5c4d[3]]; _0x5555++) _0x3333[_0x5555][0] = _0x5555;
-    
-    for (let _0x5555 = 1; _0x5555 <= _0x2222[_0x5c4d[3]]; _0x5555++) {
-      for (let _0x4444 = 1; _0x4444 <= _0x1111[_0x5c4d[3]]; _0x4444++) {
-        const _0x8888 = _0x1111[_0x4444 - 1] === _0x2222[_0x5555 - 1] ? 0 : 1;
-        _0x3333[_0x5555][_0x4444] = Math[_0x5c4d[8]](_0x3333[_0x5555][_0x4444 - 1] + 1, _0x3333[_0x5555 - 1][_0x4444] + 1, _0x3333[_0x5555 - 1][_0x4444 - 1] + _0x8888);
+    // =========================================================================
+    // อัลกอริทึม Thai-PMA (Protected Module)
+    // =========================================================================
+    (function(global){
+      const phoneticsMap = {
+        'ข':'ค','ฆ':'ค','ฉ':'ช','ฌ':'ช','ซ':'ส','ศ':'ส','ษ':'ส','ฐ':'ท','ฑ':'ท','ฒ':'ท',
+        'ถ':'ท','ธ':'ท','ฎ':'ด','ฏ':'ด','ผ':'พ','ภ':'พ','ฝ':'ฟ','ญ':'ย','ฬ':'ล','ร':'ล',
+        'ฮ':'ห','ณ':'น'
+      };
+      function normalize(word) {
+        if (!word) return "";
+        let text = word.trim().replace(/[\s\-\_\.\,\?]/g, "").replace(/[ก-ฮ]์/g, "");
+        text = text.replace(/[่้๊๋]/g, "").replace(/ใ/g, "ไ");
+        text = text.replace(/ห([งญนมอียรลว])/g, "$1").replace(/อ(ย)/g, "$1");
+        text = text.replace(/([ก-ฮ])([รล])([ะ-ูเ-ไโ])/g, "$1$3").replace(/([เ-ไโ])([ก-ฮ])([รล])/g, "$1$2");
+        let arr = text.split("");
+        for (let i = 0; i < arr.length; i++) if (phoneticsMap[arr[i]]) arr[i] = phoneticsMap[arr[i]];
+        return arr.join("");
       }
-    }
-    const _0x9999 = _0x3333[_0x2222[_0x5c4d[3]]][_0x1111[_0x5c4d[3]]];
-    const _0xaaaa = Math[_0x5c4d[9]](_0x1111[_0x5c4d[3]], _0x2222[_0x5c4d[3]]);
-    return _0xaaaa === 0 ? 0 : (_0xaaaa - _0x9999) / _0xaaaa;
-  };
-})(window);
+      global.getPhoneticSimilarity = function(t, s) {
+        const target = normalize(t), output = normalize(s);
+        if (!target || !output) return 0;
+        if (target === output) return 1.0;
+        if (output.includes(target)) return 0.9;
+        const d = Array(output.length + 1).fill(null).map(() => Array(target.length + 1).fill(null));
+        for (let i = 0; i <= target.length; i++) d[0][i] = i;
+        for (let j = 0; j <= output.length; j++) d[j][0] = j;
+        for (let j = 1; j <= output.length; j++) {
+          for (let i = 1; i <= target.length; i++) {
+            const cost = target[i - 1] === output[j - 1] ? 0 : 1;
+            d[j][i] = Math.min(d[j][i - 1] + 1, d[j - 1][i] + 1, d[j - 1][i - 1] + cost);
+          }
+        }
+        const dist = d[output.length][target.length];
+        const longest = Math.max(target.length, output.length);
+        return longest === 0 ? 0 : (longest - dist) / longest;
+      };
+    })(window);
 
     function cleanGradeNumber(val) {
       if (!val) return 0;
@@ -587,16 +576,16 @@
     }
 
     function cancelAndGoHome() {
-      stopAllMediaStreams();
+      stopAllMediaAndTimers();
       showView('home');
       loadHomeDashboard();
     }
 
-    function stopAllMediaStreams() {
+    function stopAllMediaAndTimers() {
       if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
-      if (audioStream) { audioStream.getTracks().forEach(t => t.stop()); audioStream = null; }
-      if (faceCheckTimer) clearInterval(faceCheckTimer);
-      if (audioCheckInterval) clearInterval(audioCheckInterval);
+      if (faceTrackingInterval) { clearInterval(faceTrackingInterval); faceTrackingInterval = null; }
+      if (gameTimer) { clearInterval(gameTimer); gameTimer = null; }
+      if (recognition) { try { recognition.stop(); } catch(e) {} }
     }
 
     // =========================================================================
@@ -610,6 +599,7 @@
         if (res && res.success) {
           dashboardDataCache = res.summaryData || [];
           roundStatusDataCache = res.roundStatus || null;
+          updateVisitorCounter(res.visitorCount || 0);
           renderGradeCards();
           renderPisaLineChart();
         }
@@ -618,6 +608,11 @@
       } finally {
         if (spinner) spinner.classList.remove('fa-spin');
       }
+    }
+
+    function updateVisitorCounter(count) {
+      const el = document.getElementById('footer-visitor-count');
+      if (el) el.textContent = Number(count).toLocaleString();
     }
 
     function renderGradeCards() {
@@ -743,7 +738,7 @@
       recognition.onstart = () => { isListening = true; };
       recognition.onend = () => {
         isListening = false;
-        if (!readingCompleted && !document.getElementById('view-game').classList.contains('hidden') && timeRemaining > 0) {
+        if (!document.getElementById('view-game').classList.contains('hidden') && timeRemaining > 0) {
           try { recognition.start(); } catch(e) {}
         }
       };
@@ -761,7 +756,14 @@
           matchSpokenStudentName(transcript);
         } else if (!document.getElementById('view-game').classList.contains('hidden')) {
           document.getElementById('speech-live-text').textContent = transcript;
-          checkKaraokeVoiceMatching(transcript);
+          
+          if (!readingCompleted) {
+            // ช่วงที่ 1: ตรวจจับคาราโอเกะบทอ่าน
+            checkKaraokeVoiceMatching(transcript);
+          } else if (isWaitingForQuestionAnswer) {
+            // ช่วงที่ 2: ตรวจจับเสียงอ่านตอบคำถาม 4 ข้อ
+            checkPisaVoiceAnswerMatching(transcript);
+          }
         }
       };
     }
@@ -806,10 +808,10 @@
     }
 
     // =========================================================================
-    // เตรียมข้อมูล PISA และเปิดกล้อง Face-Lock
+    // ตรวจสอบใบหน้าและล็อกกรอบอย่างเด็ดขาด (Strict Face-Lock)
     // =========================================================================
     async function fetchStudentPisaData(studentId) {
-      Swal.fire({ title: 'กำลังเตรียมบทอ่าน PISA...', didOpen: () => Swal.showLoading() });
+      Swal.fire({ title: 'กำลังเตรียมบทอ่านและชุดคำถาม...', didOpen: () => Swal.showLoading() });
       const res = await apiRequest('prepareStudentPisaGame', { studentId });
       Swal.close();
 
@@ -836,53 +838,49 @@
       navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true })
         .then(stream => {
           cameraStream = stream;
-          audioStream = new MediaStream(stream.getAudioTracks());
           video.srcObject = stream;
-          startFaceCenteringMonitor(video);
+          startFaceCenteringGatekeeper(video);
         }).catch(err => {
           console.warn(err);
-          // หากไม่มีกล้อง ให้ปลดล็อกปุ่มเพื่อไม่ให้ระบบค้าง
           unlockStartButton(true);
         });
     }
 
-    // กลไกตรวจสอบใบหน้าให้อยู่กึ่งกลางจอ (Face Centering Check)
-    function startFaceCenteringMonitor(video) {
+    function startFaceCenteringGatekeeper(video) {
       const guide = document.getElementById('face-guide-oval');
       const badge = document.getElementById('face-status-badge');
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       canvas.width = 160; canvas.height = 120;
 
-      faceCheckTimer = setInterval(() => {
+      const timer = setInterval(() => {
         if (!video.videoWidth) return;
         ctx.drawImage(video, 0, 0, 160, 120);
         const frame = ctx.getImageData(0, 0, 160, 120);
         
-        // ตรวจสอบความสว่างและความเคลื่อนไหวกึ่งกลางกรอบ
-        let centerPixels = 0, edgePixels = 0;
+        let centerPixels = 0;
         for (let y = 30; y < 90; y++) {
           for (let x = 45; x < 115; x++) {
             const idx = (y * 160 + x) * 4;
             const r = frame.data[idx], g = frame.data[idx+1], b = frame.data[idx+2];
-            // โทนสีผิวและคอนทราสต์มนุษย์
             if (r > 60 && g > 40 && b > 20 && (r - g) > 10) centerPixels++;
           }
         }
 
-        // ประเมินว่าใบหน้าอยู่ตรงกรอบหรือไม่
         if (centerPixels > 550) {
           guide.className = "face-oval-guide";
-          badge.textContent = "ใบหน้าอยู่ตรงกรอบแล้ว ✓";
+          badge.textContent = "ใบหน้าตรงกึ่งกลางกรอบแล้ว ✓";
           badge.className = "absolute bottom-3 left-1/2 transform -translate-x-1/2 bg-emerald-700 text-white px-3 py-1 rounded-full text-[10px] font-bold";
           unlockStartButton(true);
         } else {
           guide.className = "face-oval-guide invalid";
-          badge.textContent = "กรุณาขยับหน้าให้อยู่ในกรอบวงรี";
+          badge.textContent = "กรุณาจัดใบหน้าให้อยู่ในกรอบวงรี";
           badge.className = "absolute bottom-3 left-1/2 transform -translate-x-1/2 bg-rose-700 text-white px-3 py-1 rounded-full text-[10px] font-bold animate-pulse";
           unlockStartButton(false);
         }
       }, 500);
+
+      video._gateTimer = timer;
     }
 
     function unlockStartButton(active) {
@@ -899,35 +897,35 @@
     }
 
     function takeSnapshotAndStartPisa() {
-      // ถ่ายรูป Avatar
+      const video = document.getElementById('profile-video');
+      if (video && video._gateTimer) clearInterval(video._gateTimer);
+
       if (cameraStream) {
-        const video = document.getElementById('profile-video');
         const c = document.createElement('canvas');
         c.width = 180; c.height = 180;
         c.getContext('2d').drawImage(video, 0, 0, 180, 180);
         capturedPhotoBase64 = c.toDataURL('image/jpeg', 0.65);
       }
-      if (faceCheckTimer) clearInterval(faceCheckTimer);
       initPisaKaraokeGame();
     }
 
     // =========================================================================
-    // ด่านที่ 1: ระบบอ่านบทอ่านต่อเนื่องแบบคาราโอเกะ (Passage Karaoke)
+    // ด่านที่ 1: คาราโอเกะบทอ่านต่อเนื่อง
     // =========================================================================
     function initPisaKaraokeGame() {
-      timeRemaining = 90;
+      timeRemaining = 105;
       readingCompleted = false;
       currentWordPointer = 0;
-      antiCheatFlags = [];
+      currentQuestionIndex = 0;
+      answeredCorrectCount = 0;
+      isWaitingForQuestionAnswer = false;
+      faceOutOfBoundSeconds = 0;
 
       document.getElementById('ui-passage-title').textContent = currentPassage.title || "บทอ่าน";
       document.getElementById('pisa-question-panel').classList.add('hidden');
       document.getElementById('karaoke-progress').textContent = "0%";
 
-      // ตัดคำบทอ่านเป็น Array สำหรับทำคาราโอเกะ
-      const rawText = currentPassage.content || "";
-      // แบ่งคำด้วยช่องว่างหรือเครื่องหมายวรรคตอน
-      const rawTokens = rawText.split(/\s+/).filter(w => w.length > 0);
+      const rawTokens = (currentPassage.content || "").split(/\s+/).filter(w => w.length > 0);
       passageWordsArray = rawTokens.map((w, idx) => ({
         index: idx,
         word: w,
@@ -947,7 +945,9 @@
 
       highlightKaraokePointer(0);
       showView('game');
-      startAntiCheatAcousticMonitor();
+
+      // เริ่มการตรวจสอบใบหน้าระหว่างการสอบ (หลุดกรอบเกิน 1.5 วิ = จบสอบทันที)
+      startRealtimeStrictFaceMonitor();
 
       if (recognition) {
         try { recognition.start(); } catch(e) {}
@@ -959,9 +959,63 @@
         document.getElementById('ui-timer').textContent = `${m}:${s.toString().padStart(2, '0')}`;
         if (timeRemaining <= 0) {
           clearInterval(gameTimer);
-          if (!readingCompleted) unlockPisaQuestionStage(true);
+          finalizePisaAssessment();
         }
       }, 1000);
+    }
+
+    // ตรวจจับใบหน้าระหว่างสอบแบบ Real-time
+    function startRealtimeStrictFaceMonitor() {
+      const video = document.getElementById('profile-video');
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 160; canvas.height = 120;
+
+      faceTrackingInterval = setInterval(() => {
+        if (!video.videoWidth || document.getElementById('view-game').classList.contains('hidden')) return;
+        ctx.drawImage(video, 0, 0, 160, 120);
+        const frame = ctx.getImageData(0, 0, 160, 120);
+        
+        let centerPixels = 0;
+        for (let y = 30; y < 90; y++) {
+          for (let x = 45; x < 115; x++) {
+            const idx = (y * 160 + x) * 4;
+            const r = frame.data[idx], g = frame.data[idx+1], b = frame.data[idx+2];
+            if (r > 60 && g > 40 && b > 20 && (r - g) > 10) centerPixels++;
+          }
+        }
+
+        const indicator = document.getElementById('game-face-indicator');
+        const text = document.getElementById('game-face-text');
+
+        if (centerPixels > 450) {
+          faceOutOfBoundSeconds = 0;
+          indicator.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
+          text.textContent = "ใบหน้าตรงกรอบ";
+        } else {
+          faceOutOfBoundSeconds += 0.5;
+          indicator.className = "w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping";
+          text.textContent = "ใบหน้าหลุดกรอบ!";
+
+          // หากหลุดจากกรอบเกิน 1.5 วินาที -> ยกเลิกการสอบทันที ไม่บันทึกคะแนน
+          if (faceOutOfBoundSeconds >= 1.5) {
+            terminateTestDueToFaceViolation();
+          }
+        }
+      }, 500);
+    }
+
+    function terminateTestDueToFaceViolation() {
+      stopAllMediaAndTimers();
+      showView('home');
+      Swal.fire({
+        icon: 'error',
+        title: 'การทดสอบสิ้นสุดลง',
+        html: `<strong class="text-rose-600">ตรวจพบใบหน้าไม่อยู่ในพื้นที่ที่กำหนด หรือมีการเคลื่อนไหวออกจากหน้าจอ</strong><br><span class="text-xs text-slate-500">ระบบได้ยกเลิกการทดสอบรอบนี้โดยยังไม่ได้บันทึกข้อมูล กรุณาเริ่มใหม่อีกครั้ง</span>`,
+        confirmButtonText: 'รับทราบ',
+        confirmButtonColor: '#4f46e5'
+      });
+      loadHomeDashboard();
     }
 
     function highlightKaraokePointer(idx) {
@@ -980,18 +1034,13 @@
       const targetObj = passageWordsArray[currentWordPointer];
       const sim = getPhoneticSimilarity(targetObj.clean, spokenText);
 
-      // ตรวจสอบความถูกต้องของสัทศาสตร์
       if (sim >= 0.70) {
         passCurrentKaraokeWord();
-      } else {
-        // มองล่วงหน้า 1 คำ (กรณีเด็กอ่านควบ)
-        if (currentWordPointer + 1 < passageWordsArray.length) {
-          const nextObj = passageWordsArray[currentWordPointer + 1];
-          const nextSim = getPhoneticSimilarity(nextObj.clean, spokenText);
-          if (nextSim >= 0.75) {
-            passCurrentKaraokeWord();
-            passCurrentKaraokeWord();
-          }
+      } else if (currentWordPointer + 1 < passageWordsArray.length) {
+        const nextObj = passageWordsArray[currentWordPointer + 1];
+        if (getPhoneticSimilarity(nextObj.clean, spokenText) >= 0.75) {
+          passCurrentKaraokeWord();
+          passCurrentKaraokeWord();
         }
       }
     }
@@ -1013,10 +1062,9 @@
       if (currentWordPointer < passageWordsArray.length) {
         highlightKaraokePointer(currentWordPointer);
       } else {
-        // อ่านจบครบทั้งบทความ
         readingCompleted = true;
-        confetti({ particleCount: 70, spread: 60, origin: { y: 0.5 } });
-        unlockPisaQuestionStage(false);
+        confetti({ particleCount: 60, spread: 60, origin: { y: 0.5 } });
+        startPisaVoiceQuestionsStage();
       }
     }
 
@@ -1029,166 +1077,175 @@
     }
 
     // =========================================================================
-    // ด่านที่ 2: ปลดล็อกคำถามคิดวิเคราะห์ PISA (Unlock PISA Question)
+    // ด่านที่ 2: ตอบคำถาม 4 ข้อต่อเนื่องด้วยการ "อ่านออกเสียง" (Voice-Answered)
     // =========================================================================
-    function unlockPisaQuestionStage(isTimeout = false) {
-      // คำนวณคะแนนอ่าน (เต็ม 5)
-      readScore = Math.round((currentWordPointer / passageWordsArray.length) * 5);
+    function startPisaVoiceQuestionsStage() {
+      currentQuestionIndex = 0;
+      answeredCorrectCount = 0;
+      isWaitingForQuestionAnswer = true;
 
       const panel = document.getElementById('pisa-question-panel');
       panel.classList.remove('hidden');
       panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-      document.getElementById('pisa-competency-badge').textContent = currentPassage.pisaCompetency || "การคิดวิเคราะห์";
-      document.getElementById('pisa-question-text').textContent = currentPassage.questionText;
+      renderCurrentPisaQuestion(currentQuestionIndex);
+    }
+
+    function renderCurrentPisaQuestion(qIdx) {
+      if (qIdx >= currentPassage.questions.length) {
+        finalizePisaAssessment();
+        return;
+      }
+
+      const qData = currentPassage.questions[qIdx];
+      document.getElementById('pisa-step-badge').textContent = `ข้อที่ ${qIdx + 1} / 4`;
+      document.getElementById('pisa-competency-badge').textContent = qData.competency;
+      document.getElementById('pisa-question-text').textContent = qData.questionText;
 
       const choicesGrid = document.getElementById('pisa-choices-grid');
       choicesGrid.innerHTML = '';
 
-      currentPassage.choices.forEach((choice, idx) => {
-        const btn = document.createElement('button');
-        btn.className = "p-4 text-left bg-white/10 hover:bg-white/20 border border-white/20 rounded-2xl font-bold text-sm transition transform hover:scale-102 flex items-center space-x-3";
-        btn.innerHTML = `
-          <span class="w-7 h-7 rounded-full bg-yellow-400 text-slate-900 flex items-center justify-center font-black text-xs shrink-0">${['ก', 'ข', 'ค', 'ง'][idx]}</span>
-          <span class="leading-snug">${choice}</span>
+      qData.choices.forEach((choice, idx) => {
+        const div = document.createElement('div');
+        div.id = `choice-card-${idx}`;
+        div.className = "voice-choice-card p-4 bg-white/10 border border-white/20 rounded-2xl flex items-center space-x-3";
+        div.innerHTML = `
+          <span class="w-8 h-8 rounded-full bg-yellow-400 text-slate-900 flex items-center justify-center font-black text-sm shrink-0">${['ก', 'ข', 'ค', 'ง'][idx]}</span>
+          <span class="leading-snug text-sm font-bold text-slate-100">${choice}</span>
         `;
-        btn.onclick = () => submitPisaAnswer(idx);
-        choicesGrid.appendChild(btn);
+        choicesGrid.appendChild(div);
+      });
+
+      const currentScore = answeredCorrectCount * 2.5;
+      document.getElementById('pisa-current-score-text').textContent = `คะแนนสะสม: ${currentScore} / 10`;
+    }
+
+    // ตรวจสอบเสียงอ่านตัวเลือกคำตอบของนักเรียน
+    function checkPisaVoiceAnswerMatching(spokenText) {
+      if (!isWaitingForQuestionAnswer || currentQuestionIndex >= currentPassage.questions.length) return;
+
+      const qData = currentPassage.questions[currentQuestionIndex];
+      const correctChoiceText = qData.choices[qData.correctIndex];
+      const correctPrefix = ['ก', 'ข', 'ค', 'ง', 'ไก่', 'ไข่', 'ควาย', 'งู'][qData.correctIndex];
+
+      // เปรียบเทียบสัทศาสตร์กับข้อความคำตอบที่ถูกต้อง หรือการอ่านพยางค์นำ
+      const simText = getPhoneticSimilarity(cleanThaiWord(correctChoiceText), cleanThaiWord(spokenText));
+      const simPrefix = getPhoneticSimilarity(cleanThaiWord(correctPrefix), cleanThaiWord(spokenText));
+
+      // ตรวจสอบว่านักเรียนอ่านตรงกับตัวเลือกที่ถูกหรือไม่
+      if (simText >= 0.65 || simPrefix >= 0.85) {
+        // ตอบถูกต้อง!
+        handleQuestionSuccess(qData.correctIndex);
+      } else {
+        // ตรวจสอบว่าไปตรงกับตัวเลือกที่ผิดข้อใดข้อหนึ่งหรือไม่ (หากอ่านผิดข้อ ให้จบการสอบทันที)
+        qData.choices.forEach((choice, idx) => {
+          if (idx !== qData.correctIndex) {
+            const simWrong = getPhoneticSimilarity(cleanThaiWord(choice), cleanThaiWord(spokenText));
+            if (simWrong >= 0.70) {
+              handleQuestionFailed(idx);
+            }
+          }
+        });
+      }
+    }
+
+    function handleQuestionSuccess(correctIdx) {
+      isWaitingForQuestionAnswer = false;
+      answeredCorrectCount++;
+
+      const card = document.getElementById(`choice-card-${correctIdx}`);
+      if (card) {
+        card.className = "voice-choice-card p-4 bg-emerald-600/90 border-2 border-emerald-400 text-white rounded-2xl flex items-center space-x-3 transform scale-102";
+      }
+
+      Swal.fire({
+        icon: 'success',
+        title: `ข้อที่ ${currentQuestionIndex + 1} ถูกต้อง!`,
+        text: 'ยอดเยี่ยมมาก พร้อมไปต่อข้อถัดไป',
+        timer: 1500,
+        showConfirmButton: false
+      }).then(() => {
+        currentQuestionIndex++;
+        if (currentQuestionIndex < 4) {
+          isWaitingForQuestionAnswer = true;
+          renderCurrentPisaQuestion(currentQuestionIndex);
+        } else {
+          // ตอบถูกครบทั้ง 4 ข้อ = 100%
+          finalizePisaAssessment();
+        }
       });
     }
 
-    function submitPisaAnswer(selectedIndex) {
-      if (gameTimer) clearInterval(gameTimer);
-      if (recognition) recognition.stop();
-      stopAntiCheatMonitor();
-
-      const isCorrect = (selectedIndex === currentPassage.correctIndex);
-      pisaScore = isCorrect ? 5 : 1; // ตอบถูกได้ 5, ตอบผิดได้ 1
+    function handleQuestionFailed(wrongIdx) {
+      isWaitingForQuestionAnswer = false;
+      const card = document.getElementById(`choice-card-${wrongIdx}`);
+      if (card) {
+        card.className = "voice-choice-card p-4 bg-rose-600/90 border-2 border-rose-400 text-white rounded-2xl flex items-center space-x-3";
+      }
 
       Swal.fire({
-        title: isCorrect ? 'ตอบได้ถูกต้องและยอดเยี่ยม!' : 'ขอบคุณสำหรับคำตอบ',
-        html: `<div class="text-left text-xs space-y-2 mt-2">
-                 <p><strong>เฉลยและเหตุผล:</strong> ${currentPassage.explanation}</p>
-               </div>`,
-        icon: isCorrect ? 'success' : 'info',
-        confirmButtonText: 'ดูผลการประเมินสรุป'
-      }).then(() => showFinalPisaEvaluation());
+        icon: 'warning',
+        title: `ตอบยังไม่ถูกต้องในข้อที่ ${currentQuestionIndex + 1}`,
+        text: 'การทดสอบคำถามสิ้นสุดลง ระบบจะบันทึกคะแนนสะสมของข้อที่ตอบถูกต้อง',
+        timer: 2500,
+        showConfirmButton: true
+      }).then(() => {
+        finalizePisaAssessment();
+      });
     }
 
     // =========================================================================
-    // ระบบดักจับเสียงแทรก/เสียงกระซิบ (Anti-Cheat Acoustic Monitor)
+    // สรุปผลการประเมิน PISA (คิดคะแนน 4 ข้อ = 100%)
     // =========================================================================
-    function startAntiCheatAcousticMonitor() {
-      if (!audioStream) return;
-      try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        audioCtx = new AudioContext();
-        const src = audioCtx.createMediaStreamSource(audioStream);
-        analyserNode = audioCtx.createAnalyser();
-        analyserNode.fftSize = 2048;
-        src.connect(analyserNode);
-
-        const buffer = new Float32Array(analyserNode.fftSize);
-
-        audioCheckInterval = setInterval(() => {
-          analyserNode.getFloatTimeDomainData(buffer);
-          
-          // ตรวจสอบความถี่เสียงพื้นฐาน (Pitch F0 ด้วย Autocorrelation)
-          let bestOffset = -1, bestCorrelation = 0;
-          for (let offset = 40; offset < 400; offset++) {
-            let correlation = 0;
-            for (let i = 0; i < 512; i++) {
-              correlation += buffer[i] * buffer[i + offset];
-            }
-            if (correlation > bestCorrelation) {
-              bestCorrelation = correlation;
-              bestOffset = offset;
-            }
-          }
-          const sampleRate = audioCtx.sampleRate;
-          const fundamentalFreq = sampleRate / bestOffset;
-
-          // ถ้าพบความถี่เสียงผู้ใหญ่ (< 180 Hz) แทรกเข้ามาอย่างชัดเจน
-          if (bestCorrelation > 0.4 && fundamentalFreq > 80 && fundamentalFreq < 175) {
-            triggerAntiCheatFlag("พบเสียงผู้ใหญ่แทรก");
-          }
-        }, 800);
-      } catch(e) {
-        console.warn("Anti-cheat audio monitor error:", e);
-      }
-    }
-
-    function triggerAntiCheatFlag(reason) {
-      if (!antiCheatFlags.includes(reason)) {
-        antiCheatFlags.push(reason);
-        const ind = document.getElementById('anti-cheat-indicator');
-        const txt = document.getElementById('anti-cheat-status');
-        if (ind && txt) {
-          ind.className = "flex items-center space-x-1.5 bg-rose-950/60 border border-rose-500/40 px-3 py-1 rounded-xl text-[11px] text-rose-300 animate-pulse";
-          txt.textContent = `แจ้งเตือน: ${reason}`;
-        }
-      }
-    }
-
-    function stopAntiCheatMonitor() {
-      if (audioCheckInterval) clearInterval(audioCheckInterval);
-      if (audioCtx) audioCtx.close();
-    }
-
-    // =========================================================================
-    // สรุปผลและบันทึกคะแนน (Evaluation View)
-    // =========================================================================
-    function showFinalPisaEvaluation() {
-      stopAllMediaStreams();
+    function finalizePisaAssessment() {
+      stopAllMediaAndTimers();
       showView('result');
 
-      const totalScore = readScore + pisaScore; // เต็ม 10
-      document.getElementById('result-read-score').textContent = `${readScore}/5 คะแนน`;
-      document.getElementById('result-pisa-score').textContent = `${pisaScore}/5 คะแนน`;
+      const totalScore = answeredCorrectCount * 2.5; // ข้อละ 2.5 คะแนน (เต็ม 10)
+      const percent = Math.round((answeredCorrectCount / 4) * 100);
+
+      document.getElementById('result-score-text').textContent = `${totalScore}/10 คะแนน`;
+      document.getElementById('result-percent-text').textContent = `${percent}%`;
 
       let levelStr = "ปรับปรุง", icon = '<i class="fa-solid fa-circle-exclamation text-rose-500"></i>';
-      if (totalScore >= 8) { levelStr = "ดีมาก"; icon = '<i class="fa-solid fa-crown text-yellow-400 animate-bounce"></i>'; }
-      else if (totalScore >= 5) { levelStr = "พอใช้"; icon = '<i class="fa-solid fa-star text-amber-500"></i>'; }
-
-      document.getElementById('result-icon-container').innerHTML = icon;
-      document.getElementById('result-title').textContent = `ระดับ: ${levelStr} (${totalScore}/10)`;
-
-      const cheatBox = document.getElementById('result-anti-cheat-box');
-      if (antiCheatFlags.length > 0) {
-        cheatBox.className = "w-full p-2.5 rounded-xl text-xs font-bold text-center border bg-rose-50 border-rose-200 text-rose-700";
-        cheatBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1"></i> แจ้งเตือน: ${antiCheatFlags.join(", ")}`;
-      } else {
-        cheatBox.className = "w-full p-2.5 rounded-xl text-xs font-bold text-center border bg-emerald-50 border-emerald-200 text-emerald-700";
-        cheatBox.innerHTML = `<i class="fa-solid fa-shield-check mr-1"></i> ตรวจสอบการอ่าน: โปร่งใส ปกติ 100%`;
+      if (answeredCorrectCount === 4) {
+        levelStr = "ดีมาก (100%)";
+        icon = '<i class="fa-solid fa-crown text-yellow-400 animate-bounce"></i>';
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+      } else if (answeredCorrectCount >= 2) {
+        levelStr = "พอใช้";
+        icon = '<i class="fa-solid fa-star text-amber-500"></i>';
       }
 
-      autoSavePisaSummary(totalScore, levelStr);
+      document.getElementById('result-icon-container').innerHTML = icon;
+      document.getElementById('result-title').textContent = `ระดับ: ${levelStr}`;
+
+      autoSavePisaSummary(totalScore, percent, levelStr);
     }
 
-    async function autoSavePisaSummary(totalScore, finalLevel) {
+    async function autoSavePisaSummary(totalScore, percent, finalLevel) {
       const container = document.getElementById('save-status-container');
-      container.innerHTML = `<span class="text-indigo-600 font-bold"><i class="fa-solid fa-spinner animate-spin mr-1"></i> กำลังบันทึกผลสมรรถนะ PISA สู่ระบบ...</span>`;
+      container.innerHTML = `<span class="text-indigo-600 font-bold"><i class="fa-solid fa-spinner animate-spin mr-1"></i> กำลังบันทึกผลสมรรถนะ PISA...</span>`;
 
       const summary = {
         studentId: currentStudent.studentId,
         name: `${currentStudent.prefix}${currentStudent.firstName} ${currentStudent.lastName}`,
         grade: cleanGradeNumber(currentStudent.grade),
         room: currentStudent.room,
-        readScore: readScore,
-        pisaScore: pisaScore,
         totalScore: totalScore,
+        percent: percent,
         level: finalLevel,
-        antiCheatFlag: antiCheatFlags.length > 0 ? antiCheatFlags.join(", ") : "ปกติ"
+        antiCheatFlag: "ปกติ (ผ่านเกณฑ์ Face-Lock)"
       };
 
       try {
         const res = await apiRequest('savePisaResult', {
           summary: summary,
           base64Image: capturedPhotoBase64,
-          base64Audio: capturedAudioBase64
+          base64Audio: null
         });
         if (res && res.success) {
-          container.innerHTML = `<span class="text-emerald-600 font-black"><i class="fa-solid fa-circle-check mr-1"></i> บันทึกข้อมูลสมรรถนะสำเร็จ! (รอบที่ ${res.round || 1})</span>`;
+          container.innerHTML = `<span class="text-emerald-600 font-black"><i class="fa-solid fa-circle-check mr-1"></i> บันทึกข้อมูลเรียบร้อยแล้ว! (รอบที่ ${res.round || 1})</span>`;
         } else {
           container.innerHTML = `<span class="text-rose-500 font-bold">บันทึกติดขัด แต่คะแนนถูกเก็บในเครื่องแล้ว</span>`;
         }
@@ -1198,7 +1255,7 @@
     }
 
     // =========================================================================
-    // แดชบอร์ดคุณครู & พิมพ์ใบรายงาน PDF
+    // แดชบอร์ดคุณครู
     // =========================================================================
     function showTeacherLogin() {
       showView('teacher-login');
@@ -1248,29 +1305,22 @@
       if (search) list = list.filter(d => cleanThaiWord(d.name).includes(search) || cleanStudentId(d.studentId).includes(search));
 
       if (list.length === 0) {
-        body.innerHTML = `<tr><td colspan="11" class="p-6 text-center text-slate-400 font-bold">ไม่พบข้อมูลผลการประเมิน</td></tr>`;
+        body.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-400 font-bold">ไม่พบข้อมูลผลการประเมิน</td></tr>`;
         return;
       }
 
       list.forEach(item => {
         const tr = document.createElement('tr');
         tr.className = "border-b border-slate-100 hover:bg-slate-50 transition";
-        const hasFlag = item.flag && item.flag !== "ปกติ";
         tr.innerHTML = `
           <td class="p-3 text-[11px] text-slate-400 font-sans">${new Date(item.date).toLocaleDateString('th-TH')}</td>
           <td class="p-3 font-mono font-bold">${cleanStudentId(item.studentId)}</td>
           <td class="p-3 font-semibold text-slate-800">${item.name}</td>
           <td class="p-3 text-center font-bold">ป.${cleanGradeNumber(item.grade)}/${item.room}</td>
-          <td class="p-3 text-center font-bold text-indigo-600">${item.readScore || 0}/5</td>
-          <td class="p-3 text-center font-bold text-emerald-600">${item.pisaScore || 0}/5</td>
-          <td class="p-3 text-center font-black text-slate-900">${item.score}/10</td>
-          <td class="p-3 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold ${item.level === 'ดีมาก' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${item.level}</span></td>
-          <td class="p-3 text-center">
-            ${hasFlag ? `<span class="bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full text-[10px] font-black"><i class="fa-solid fa-triangle-exclamation mr-1"></i>${item.flag}</span>` : '<span class="text-emerald-600 text-[10px] font-bold">✓ ปกติ</span>'}
-          </td>
-          <td class="p-3 text-center">
-            ${item.audioUrl ? `<a href="${item.audioUrl}" target="_blank" class="text-indigo-600 hover:underline text-[11px] font-bold"><i class="fa-solid fa-volume-high"></i> ฟัง</a>` : '-'}
-          </td>
+          <td class="p-3 text-center font-black text-indigo-700">${item.score}/10</td>
+          <td class="p-3 text-center font-bold text-emerald-600">${item.percent || 0}%</td>
+          <td class="p-3 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold ${item.level.includes('ดีมาก') ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${item.level}</span></td>
+          <td class="p-3 text-center font-bold text-slate-600">รอบที่ ${item.round || 1}</td>
           <td class="p-3 text-center">
             <button onclick='printPisaReport(${JSON.stringify(item)})' class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-1 px-2.5 rounded-lg text-[10px] transition">
               <i class="fa-solid fa-print"></i> พิมพ์ PDF
@@ -1318,38 +1368,33 @@
             .header { text-align: center; border-bottom: 2px solid #4338ca; padding-bottom: 15px; margin-bottom: 25px; }
             .title { font-size: 18px; font-weight: 800; color: #1e1b4b; }
             .score-box { background: #f8fafc; border: 1px solid #cbd5e1; padding: 15px; border-radius: 12px; margin-top: 15px; }
-            .score-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 10px; text-align: center; }
+            .score-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; text-align: center; }
             .footer { margin-top: 50px; display: flex; justify-content: space-between; text-align: center; }
           </style>
         </head>
         <body>
           <div class="header">
             <div class="title">ใบรายงานผลสมรรถนะการอ่านออกเสียงและการคิดวิเคราะห์แนว PISA (Thai-PMA)</div>
-            <div>การคัดกรองรอบที่ ${item.round || 1} • ระดับประถมศึกษาตอนปลาย (ป.3 - ป.6)</div>
+            <div>การคัดกรองรอบที่ ${item.round || 1} • ระดับประถมศึกษา (ป.3 - ป.6)</div>
           </div>
           <div>
             <p><strong>ชื่อ-นามสกุล:</strong> ${item.name} | <strong>รหัสประจำตัว:</strong> ${cleanStudentId(item.studentId)}</p>
             <p><strong>ระดับชั้น:</strong> ชั้นประถมศึกษาปีที่ ${cleanGradeNumber(item.grade)}/${item.room} | <strong>วันที่ประเมิน:</strong> ${new Date(item.date).toLocaleDateString('th-TH')}</p>
           </div>
           <div class="score-box">
-            <strong>ผลการประเมินรายด้าน:</strong>
+            <strong>ผลการประเมินสมรรถนะคิดวิเคราะห์ (4 ข้อต่อเนื่อง):</strong>
             <div class="score-grid">
-              <div style="background:#e0e7ff; padding:10px; border-radius:8px;">
-                <span>การอ่านออกเสียงข้อความ</span><br>
-                <strong style="font-size:18px; color:#3730a3;">${item.readScore || 0} / 5</strong>
+              <div style="background:#e0e7ff; padding:12px; border-radius:8px;">
+                <span>คะแนนที่ได้รับ</span><br>
+                <strong style="font-size:20px; color:#3730a3;">${item.score} / 10</strong>
               </div>
-              <div style="background:#dcfce7; padding:10px; border-radius:8px;">
-                <span>การคิดวิเคราะห์ PISA</span><br>
-                <strong style="font-size:18px; color:#166534;">${item.pisaScore || 0} / 5</strong>
-              </div>
-              <div style="background:#fef3c7; padding:10px; border-radius:8px;">
-                <span>คะแนนรวมสุทธิ</span><br>
-                <strong style="font-size:18px; color:#92400e;">${item.score} / 10</strong>
+              <div style="background:#dcfce7; padding:12px; border-radius:8px;">
+                <span>คิดเป็นร้อยละ</span><br>
+                <strong style="font-size:20px; color:#166534;">${item.percent || 0}%</strong>
               </div>
             </div>
           </div>
-          <p style="margin-top:20px;"><strong>ผลการตรวจสอบความโปร่งใส:</strong> ${item.flag || 'ปกติ'}</p>
-          <p><strong>เกณฑ์ระดับสมรรถนะ:</strong> ${item.level}</p>
+          <p style="margin-top:20px;"><strong>เกณฑ์ระดับสมรรถนะ:</strong> ${item.level}</p>
           <div class="footer">
             <div>(......................................................)<br>นักเรียนผู้รับการประเมิน</div>
             <div>(......................................................)<br>ครูผู้ประเมิน / ตรวจทาน</div>
