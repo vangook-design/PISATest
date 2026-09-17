@@ -3,7 +3,7 @@
 <!-- 
   =============================================================
   ระบบประเมินสมรรถนะการอ่านและการคิดวิเคราะห์แนว PISA (ป.3 - ป.6)
-  Next-Gen Thai-PMA PISA System (Full-Passage Reading & Hybrid Proctoring)
+  Next-Gen Thai-PMA PISA System (Voice Prompt & Voice Answer with Audio Feedback)
   
   ผู้พัฒนา: นายชาณัตถ์ รุ่งรัตน์
   =============================================================
@@ -38,14 +38,14 @@
     /* สไตล์ข้อความบทอ่านทั้งหมด (Full Passage) */
     .passage-phrase {
       display: inline;
-      color: #000000; /* ตัวหนังสือเริ่มต้นเป็นสีดำ */
+      color: #000000; /* ตัวหนังสือเริ่มต้นสีดำ */
       padding: 2px 4px;
       margin: 0 2px;
       border-radius: 6px;
       transition: all 0.25s ease;
     }
 
-    /* วรรคที่กำลังอ่านอยู่ปัจจุบัน (มีไฮไลต์สีเหลืองอ่อนนำสายตา) */
+    /* วรรคที่กำลังอ่านอยู่ปัจจุบัน */
     .passage-phrase.active {
       background-color: #fef08a;
       color: #854d0e;
@@ -55,7 +55,7 @@
 
     /* วรรคที่อ่านถูกต้องแล้ว เปลี่ยนเป็นสีเขียว */
     .passage-phrase.passed {
-      color: #16a34a !important; /* เปลี่ยนเป็นสีเขียว */
+      color: #16a34a !important;
       background-color: transparent !important;
       font-weight: 700;
       border-bottom: none;
@@ -63,6 +63,11 @@
 
     .voice-choice-card {
       transition: all 0.3s ease;
+    }
+    .locked-choice {
+      opacity: 0.35;
+      filter: grayscale(1);
+      pointer-events: none;
     }
   </style>
 </head>
@@ -79,7 +84,7 @@
           </div>
           <div>
             <h2 class="text-base sm:text-lg font-black game-font leading-tight text-yellow-400">ระบบประเมินสมรรถนะการอ่านออกเสียงและการคิดวิเคราะห์แนว PISA (ป.3 - ป.6)</h2>
-            <p class="text-[10px] text-slate-300 mt-0.5">Next-Gen Thai-PMA Karaoke Platform • คัดกรองและส่งเสริมทักษะการอ่านอย่างเที่ยงตรง</p>
+            <p class="text-[10px] text-slate-300 mt-0.5">Next-Gen Thai-PMA Karaoke Platform • อ่านโจทย์และอ่านคำตอบด้วยเสียงพร้อมเสียงตอบรับ</p>
           </div>
         </div>
         
@@ -212,7 +217,7 @@
       </button>
     </section>
 
-    <!-- VIEW 4: หน้า GAME PLAY (Full Passage Display + Voice 4 Questions) -->
+    <!-- VIEW 4: หน้า GAME PLAY (Full Passage Display + Voice Prompt & Voice Answer) -->
     <section id="view-game" class="view-section hidden w-full max-w-4xl h-[92vh] glass-panel rounded-3xl animate-fadeIn flex flex-col overflow-hidden relative">
       <!-- Header -->
       <div class="w-full bg-slate-900 text-white p-3 md:p-4 flex justify-between items-center z-20 shadow-md">
@@ -237,19 +242,18 @@
 
       <div class="flex-grow flex flex-col p-4 md:p-6 overflow-y-auto justify-between bg-slate-50/40">
         
-        <!-- ส่วนที่ 1: กล่องแสดงเนื้อหาบทความยาวทั้งหมดบนหน้าจอ (Full Passage Display) -->
+        <!-- ส่วนที่ 1: กล่องแสดงเนื้อหาบทความยาวทั้งหมดบนหน้าจอ (ตัวหนังสือดำ ➔ สีเขียว) -->
         <div id="passage-container-box" class="bg-white p-6 md:p-8 rounded-3xl border border-slate-200/80 shadow-sm relative text-left">
           <div class="flex justify-between items-center mb-3 border-b pb-2 text-xs">
             <span class="font-bold text-slate-500">
-              <i class="fa-solid fa-book-open text-indigo-500 mr-1.5"></i>อ่านออกเสียงตามเนื้อหาบทความ (วรรคที่อ่านถูกต้องแล้วจะเปลี่ยนเป็นสีเขียว)
+              <i class="fa-solid fa-book-open text-indigo-500 mr-1.5"></i>อ่านออกเสียงตามเนื้อหาบทความ (วรรคที่อ่านถูกต้องแล้วจะเปลี่ยนเป็นสีเขียวพร้อมเสียงตอบรับ)
             </span>
             <span id="karaoke-progress" class="font-black text-emerald-600 text-sm">0%</span>
           </div>
           
-          <!-- พื้นที่แสดงบทความยาวทั้งหมด ต่อเนื่องกันเป็นย่อหน้าเดียว โดยตัวหนังสือเป็นสีดำ -->
           <div class="p-5 bg-slate-50/60 rounded-2xl border border-slate-100 min-h-[140px]">
             <div id="full-passage-container" class="text-xl md:text-2xl leading-loose text-slate-900 tracking-wide font-medium select-none">
-              <!-- วรรคสั้นๆ ทั้งหมดจะเรียงต่อกันเป็นเนื้อหาเดียวที่นี่ -->
+              <!-- ข้อความทั้งหมดยาวจะเรียงที่นี่ -->
             </div>
           </div>
 
@@ -264,24 +268,30 @@
           </div>
         </div>
 
-        <!-- ส่วนที่ 2: กล่องคำถามคิดวิเคราะห์ PISA 4 ข้อ (Voice-Answered) -->
+        <!-- ส่วนที่ 2: กล่องคำถามคิดวิเคราะห์ PISA 4 ข้อ (ต้องอ่านโจทย์ก่อน จึงจะมีสิทธิ์อ่านเลือกคำตอบ) -->
         <div id="pisa-question-panel" class="bg-gradient-to-r from-slate-900 to-indigo-950 text-white p-5 md:p-6 rounded-3xl shadow-xl mt-4 hidden transform transition duration-500">
           <div class="flex items-center justify-between mb-3 border-b border-indigo-800/80 pb-2">
             <div class="flex items-center space-x-2">
               <span id="pisa-step-badge" class="bg-yellow-400 text-slate-950 px-2.5 py-0.5 rounded-full font-black text-xs">ข้อที่ 1/4</span>
               <span id="pisa-competency-badge" class="text-xs font-bold text-yellow-300">สมรรถนะ PISA</span>
             </div>
-            <span class="text-[11px] text-indigo-200 animate-pulse font-bold"><i class="fa-solid fa-microphone mr-1"></i>ออกเสียงอ่านตัวเลือกคำตอบที่ถูกต้อง</span>
+            <span id="pisa-instruction-text" class="text-xs font-bold text-yellow-300 animate-pulse">
+              <i class="fa-solid fa-microphone mr-1"></i>ขั้นตอนที่ 1: อ่านโจทย์คำถามนี้ออกเสียงให้ถูกต้อง
+            </span>
           </div>
 
-          <h3 id="pisa-question-text" class="text-base md:text-lg font-black mb-4 leading-relaxed game-font text-white">
-            คำถาม...
-          </h3>
+          <!-- ตัวโจทย์คำถาม (ต้องอ่านออกเสียงโจทย์ก่อน) -->
+          <div id="pisa-question-box" class="p-3.5 bg-white/10 rounded-2xl border border-white/20 mb-4">
+            <h3 id="pisa-question-text" class="text-base md:text-lg font-black leading-relaxed game-font text-white">
+              คำถาม...
+            </h3>
+          </div>
 
-          <div id="pisa-choices-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+          <!-- ตัวเลือกคำตอบ 4 ตัวเลือก (จะปลดล็อกเมื่ออ่านโจทย์ผ่าน) -->
+          <div id="pisa-choices-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3 locked-choice"></div>
 
           <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center text-xs">
-            <span class="text-slate-400">ตอบถูกข้อ 1 จึงจะไปข้อ 2, 3, 4 (ข้อละ 2.5 คะแนน รวม 100%)</span>
+            <span id="pisa-guide-footer" class="text-slate-400">อ่านโจทย์ให้ผ่านก่อน จึงจะปลดล็อกให้อ่านเลือกคำตอบ</span>
             <span id="pisa-current-score-text" class="font-extrabold text-yellow-400">คะแนนสะสม: 0 / 10</span>
           </div>
         </div>
@@ -432,33 +442,32 @@
   </footer>
 
   <!-- ========================================================================= -->
-  <!-- JAVASCRIPT LOGIC (FULL-PASSAGE COLOR CHANGER & PROCTORING) -->
+  <!-- JAVASCRIPT LOGIC (AUDIO FEEDBACK & PROMPT/ANSWER SEQUENTIAL LOGIC) -->
   <!-- ========================================================================= -->
   <script>
     const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzCCReThqotdBWGgK5NNH2dTJdtcV_4CsUNE_iVps1U8ELI38wJDCFvrZVZIostTZIGqA/exec"; 
     const SECRET_TOKEN = "READING_GAME_BY_CHANAT_2024"; 
 
-    // ตัวแปรระบบ
     let currentStudent = null;
     let currentPassage = null;
     let cameraStream = null;
     let audioStream = null;
     
-    // ระบบ Silent Tri-Snapshot (3 จังหวะหลักฐาน)
+    // ระบบ Silent Tri-Snapshot
     let snapshot1 = null; 
     let snapshot2 = null; 
     let snapshot3 = null; 
     let finalStitchedFilmstripBase64 = null;
 
-    // สถานะบทอ่านยาวทั้งหมด (Full Passage)
+    // สถานะบทอ่านยาว
     let allPassagePhrases = [];
     let currentPhrasePointer = 0;
     let readingCompleted = false;
 
-    // สถานะคำถาม 4 ข้อ (Voice-Answered)
+    // สถานะคำถาม 4 ข้อ (2-Stage: อ่านโจทย์ ➔ อ่านคำตอบ)
     let currentQuestionIndex = 0;
     let answeredCorrectCount = 0;
-    let isWaitingForQuestionAnswer = false;
+    let pisaStageMode = "IDLE"; // "READING_PROMPT" หรือ "READING_ANSWER"
 
     // Speech & Timer
     let recognition = null;
@@ -466,7 +475,7 @@
     let gameTimer = null;
     let timeRemaining = 105;
 
-    // Audio Anomaly (Web Audio API)
+    // Audio Anomaly & Feedback
     let audioCtx = null;
     let analyserNode = null;
     let antiCheatInterval = null;
@@ -477,6 +486,68 @@
     let dashboardDataCache = [];
     let roundStatusDataCache = null;
     let roundsChartInstance = null;
+
+    // =========================================================================
+    // ระบบสังเคราะห์เสียงเอฟเฟกต์ตอบรับ (Web Audio API Synthesizer)
+    // =========================================================================
+    function playAudioFeedback(type) {
+      try {
+        const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AudioCtxClass();
+        if (ctx.state === 'suspended') ctx.resume();
+
+        if (type === 'phrase_pass') {
+          // เสียงตอบรับเบาๆ นุ่มนวล เมื่ออ่านผ่านแต่ละวรรค
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(659.25, ctx.currentTime); // E5
+          gain.gain.setValueAtTime(0.06, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.start(); osc.stop(ctx.currentTime + 0.12);
+
+        } else if (type === 'prompt_pass') {
+          // เสียงระฆังคู่ ปลดล็อกตัวเลือกคำตอบเมื่ออ่านโจทย์ผ่าน
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+          osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.08); // G5
+          gain.gain.setValueAtTime(0.12, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.28);
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.start(); osc.stop(ctx.currentTime + 0.28);
+
+        } else if (type === 'correct_answer') {
+          // เสียงคอร์ดดนตรีสดใสตอบถูก
+          const notes = [523.25, 659.25, 783.99, 1046.50];
+          notes.forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.06);
+            gain.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.06);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.06 + 0.32);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(ctx.currentTime + i * 0.06);
+            osc.stop(ctx.currentTime + i * 0.06 + 0.32);
+          });
+
+        } else if (type === 'wrong_answer') {
+          // เสียงเตือนตอบผิด
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, ctx.currentTime);
+          osc.frequency.linearRampToValueAtTime(130, ctx.currentTime + 0.32);
+          gain.gain.setValueAtTime(0.2, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.32);
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.start(); osc.stop(ctx.currentTime + 0.32);
+        }
+      } catch(e) {}
+    }
 
     // =========================================================================
     // อัลกอริทึม Thai-PMA (Protected Module)
@@ -501,7 +572,7 @@
         const target = normalize(t), output = normalize(s);
         if (!target || !output) return 0;
         if (target === output) return 1.0;
-        if (output.includes(target)) return 0.9;
+        if (target.length >= 3 && output.includes(target)) return 0.9;
         const d = Array(output.length + 1).fill(null).map(() => Array(target.length + 1).fill(null));
         for (let i = 0; i <= target.length; i++) d[0][i] = i;
         for (let j = 0; j <= output.length; j++) d[j][0] = j;
@@ -748,10 +819,13 @@
           document.getElementById('speech-live-text').textContent = transcript;
           
           if (!readingCompleted) {
-            // ตรวจจับเสียงอ่านเทียบกับวรรคสั้นปัจจุบัน
+            // ด่านที่ 1: ตรวจจับเสียงอ่านบทอ่าน
             checkCurrentChunkVoiceMatching(transcript);
-          } else if (isWaitingForQuestionAnswer) {
-            // ตรวจจับเสียงอ่านตัวเลือกคำถาม 4 ข้อ
+          } else if (pisaStageMode === "READING_PROMPT") {
+            // ด่านที่ 2 ขั้นที่ 1: ตรวจจับเสียงอ่านโจทย์คำถาม
+            checkPisaPromptVoiceMatching(transcript);
+          } else if (pisaStageMode === "READING_ANSWER") {
+            // ด่านที่ 2 ขั้นที่ 2: ตรวจจับเสียงอ่านตัวเลือกคำตอบ 1 ข้อ
             checkPisaVoiceAnswerMatching(transcript);
           }
         }
@@ -835,7 +909,6 @@
         });
     }
 
-    // ช็อตที่ 1: ถ่ายรูปยืนยันตัวตนตอนเริ่มสอบ
     function takeSnapshotAndStartPisa() {
       const video = document.getElementById('profile-video');
       if (cameraStream && video.videoWidth) {
@@ -847,7 +920,6 @@
       initChunkedKaraokeGame();
     }
 
-    // ฟังก์ชันแอบแคปหลักฐานอัตโนมัติ (Silent Snapshot Helper)
     function captureSilentEvidenceShot(shotNumber) {
       const video = document.getElementById('profile-video');
       if (!cameraStream || !video.videoWidth) return;
@@ -861,7 +933,6 @@
       } catch(e) {}
     }
 
-    // รวมภาพ 3 ช็อตเป็นแถบฟิล์มใบงาน (Filmstrip Stitched Canvas)
     function generateStitchedTriFilmstrip() {
       return new Promise((resolve) => {
         const canvas = document.createElement('canvas');
@@ -896,7 +967,7 @@
     }
 
     // =========================================================================
-    // ด่านที่ 1: แสดงบทความยาวทั้งหมดบนหน้าจอ (ตัวหนังสือดำ ➔ อ่านถูกเปลี่ยนเป็นเขียว)
+    // ด่านที่ 1: แสดงบทความยาวทั้งหมดบนหน้าจอ (ตัวหนังสือดำ ➔ สีเขียว พร้อมเสียงตอบรับ)
     // =========================================================================
     function initChunkedKaraokeGame() {
       timeRemaining = 105;
@@ -904,7 +975,7 @@
       currentPhrasePointer = 0;
       currentQuestionIndex = 0;
       answeredCorrectCount = 0;
-      isWaitingForQuestionAnswer = false;
+      pisaStageMode = "IDLE";
       antiCheatFlags = [];
 
       document.getElementById('ui-passage-title').textContent = currentPassage.title || "บทอ่าน";
@@ -912,23 +983,21 @@
       document.getElementById('passage-container-box').classList.remove('hidden');
       document.getElementById('karaoke-progress').textContent = "0%";
 
-      // แบ่งเนื้อหาออกเป็นวรรคสั้นๆ (2-4 คำต่อวรรค เพื่อให้ตรวจจับเสียงได้แม่นยำ)
+      // แบ่งเนื้อหาออกเป็นวรรคสั้นๆ (2-4 คำต่อวรรค)
       allPassagePhrases = buildShortPhrases(currentPassage);
 
-      // เรนเดอร์ข้อความทั้งหมดลงบนหน้าจอพร้อมกัน โดยเริ่มต้นเป็นตัวหนังสือสีดำทั้งหมด
+      // เรนเดอร์ข้อความทั้งหมดลงบนหน้าจอพร้อมกัน ตัวหนังสือเริ่มต้นสีดำ
       const container = document.getElementById('full-passage-container');
       container.innerHTML = '';
       allPassagePhrases.forEach((p, idx) => {
         const span = document.createElement('span');
         span.id = `phrase-token-${idx}`;
-        span.className = "passage-phrase"; // เริ่มต้นสีดำ
+        span.className = "passage-phrase";
         span.textContent = p.text + " ";
         container.appendChild(span);
       });
 
-      // ไฮไลต์สีเหลืองอ่อนนำสายตาที่วรรคแรก
       highlightCurrentPhrase(0);
-
       showView('game');
       startLightweightAudioMonitor();
 
@@ -981,11 +1050,9 @@
       const targetPhrase = allPassagePhrases[currentPhrasePointer];
       const sim = getPhoneticSimilarity(targetPhrase.clean, spokenText);
 
-      // ถ้านักเรียนอ่านตรงกับวรรคสั้นปัจจุบัน
       if (sim >= 0.65) {
         passCurrentPhrase();
       } else if (currentPhrasePointer + 1 < allPassagePhrases.length) {
-        // มองล่วงหน้า 1 วรรค กรณีเด็กอ่านเร็วควบ 2 วรรคติดกัน
         const nextPhrase = allPassagePhrases[currentPhrasePointer + 1];
         if (getPhoneticSimilarity(nextPhrase.clean, spokenText) >= 0.70) {
           passCurrentPhrase();
@@ -994,7 +1061,6 @@
       }
     }
 
-    // เมื่ออ่านวรรคถูกต้อง ให้เปลี่ยนวรรคนั้นเป็น "สีเขียว"
     function passCurrentPhrase() {
       if (currentPhrasePointer >= allPassagePhrases.length) return;
 
@@ -1004,14 +1070,16 @@
       const span = document.getElementById(`phrase-token-${currentPhrasePointer}`);
       if (span) {
         span.classList.remove('active');
-        span.classList.add('passed'); // เปลี่ยนตัวหนังสือเป็นสีเขียว
+        span.classList.add('passed'); // เปลี่ยนเป็นสีเขียว
       }
+
+      // เล่นเสียงตอบรับเบาๆ แต่ละช่วงอ่าน
+      playAudioFeedback('phrase_pass');
 
       currentPhrasePointer++;
       const percent = Math.round((currentPhrasePointer / allPassagePhrases.length) * 100);
       document.getElementById('karaoke-progress').textContent = `${percent}%`;
 
-      // แอบแคปช็อตที่ 2 เมื่ออ่านผ่านครึ่งเรื่อง
       if (currentPhrasePointer === Math.floor(allPassagePhrases.length / 2)) {
         captureSilentEvidenceShot(2);
       }
@@ -1019,12 +1087,17 @@
       if (currentPhrasePointer < allPassagePhrases.length) {
         highlightCurrentPhrase(currentPhrasePointer);
       } else {
-        // อ่านครบทั้งบทความแล้ว ตัวหนังสือเขียวทั้งหน้าจอ ➔ ไปด่านคำถาม PISA
+        // อ่านจบครบทั้งบทความแล้ว หยุดไมค์เพื่อตัดเสียงเก่าทิ้ง
         readingCompleted = true;
+        if (recognition) {
+          try { recognition.stop(); } catch(e) {}
+        }
         confetti({ particleCount: 70, spread: 60, origin: { y: 0.5 } });
+
+        // หน่วงเวลา 1.2 วินาทีเพื่อให้เริ่มเข้าสู่ด่านคำถาม
         setTimeout(() => {
           startPisaVoiceQuestionsStage();
-        }, 600);
+        }, 1200);
       }
     }
 
@@ -1037,25 +1110,22 @@
     }
 
     // =========================================================================
-    // ด่านที่ 2: ตอบคำถาม 4 ข้อต่อเนื่องด้วยการ "อ่านออกเสียง" (Voice-Answered)
+    // ด่านที่ 2: ต้องอ่านโจทย์ก่อน ➔ ปลดล็อกให้อ่านตัวเลือกคำตอบ 1 ข้อ (4 ข้อต่อเนื่อง)
     // =========================================================================
     function startPisaVoiceQuestionsStage() {
       currentQuestionIndex = 0;
       answeredCorrectCount = 0;
-      isWaitingForQuestionAnswer = true;
 
-      // แอบแคปช็อตที่ 3 ตอนเข้าสู่ด่านตอบคำถาม
       captureSilentEvidenceShot(3);
-
       document.getElementById('passage-container-box').classList.add('hidden');
       const panel = document.getElementById('pisa-question-panel');
       panel.classList.remove('hidden');
       panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-      renderCurrentPisaQuestion(currentQuestionIndex);
+      renderCurrentPisaQuestionStep(currentQuestionIndex);
     }
 
-    function renderCurrentPisaQuestion(qIdx) {
+    function renderCurrentPisaQuestionStep(qIdx) {
       if (qIdx >= currentPassage.questions.length) {
         finalizePisaAssessment();
         return;
@@ -1064,9 +1134,19 @@
       const qData = currentPassage.questions[qIdx];
       document.getElementById('pisa-step-badge').textContent = `ข้อที่ ${qIdx + 1} / 4`;
       document.getElementById('pisa-competency-badge').textContent = qData.competency;
+      
+      // แสดงโจทย์คำถาม
+      const qBox = document.getElementById('pisa-question-box');
+      qBox.className = "p-3.5 bg-yellow-400/10 border-2 border-yellow-400/50 rounded-2xl mb-4";
+      document.getElementById('pisa-question-text').className = "text-base md:text-lg font-black leading-relaxed game-font text-yellow-300";
       document.getElementById('pisa-question-text').textContent = qData.questionText;
 
+      document.getElementById('pisa-instruction-text').innerHTML = `<i class="fa-solid fa-microphone mr-1"></i>ขั้นตอนที่ 1: อ่านโจทย์คำถามนี้ออกเสียงให้ถูกต้อง`;
+      document.getElementById('pisa-guide-footer').textContent = "อ่านโจทย์คำถามให้ผ่านก่อน จึงจะมีสิทธิ์อ่านเลือกคำตอบ";
+
+      // ล็อกตัวเลือกคำตอบไว้ก่อน
       const choicesGrid = document.getElementById('pisa-choices-grid');
+      choicesGrid.className = "grid grid-cols-1 md:grid-cols-2 gap-3 locked-choice";
       choicesGrid.innerHTML = '';
 
       qData.choices.forEach((choice, idx) => {
@@ -1074,7 +1154,7 @@
         div.id = `choice-card-${idx}`;
         div.className = "voice-choice-card p-4 bg-white/10 border border-white/20 rounded-2xl flex items-center space-x-3";
         div.innerHTML = `
-          <span class="w-8 h-8 rounded-full bg-yellow-400 text-slate-900 flex items-center justify-center font-black text-sm shrink-0">${['ก', 'ข', 'ค', 'ง'][idx]}</span>
+          <span class="w-8 h-8 rounded-full bg-slate-700 text-white flex items-center justify-center font-black text-xs shrink-0">${idx + 1}</span>
           <span class="leading-snug text-sm font-bold text-slate-100">${choice}</span>
         `;
         choicesGrid.appendChild(div);
@@ -1082,25 +1162,87 @@
 
       const currentScore = answeredCorrectCount * 2.5;
       document.getElementById('pisa-current-score-text').textContent = `คะแนนสะสม: ${currentScore} / 10`;
+
+      // หน่วงเวลา 800ms ก่อนเริ่มเปิดไมค์ฟังเสียงอ่านโจทย์คำถาม
+      setTimeout(() => {
+        pisaStageMode = "READING_PROMPT";
+        if (recognition) {
+          try { recognition.start(); } catch(e) {}
+        }
+        document.getElementById('speech-live-text').textContent = "พร้อมแล้ว... อ่านโจทย์คำถามออกเสียงได้เลย";
+      }, 800);
     }
 
-    function checkPisaVoiceAnswerMatching(spokenText) {
-      if (!isWaitingForQuestionAnswer || currentQuestionIndex >= currentPassage.questions.length) return;
+    // 1. ตรวจสอบการอ่านโจทย์คำถาม
+    function checkPisaPromptVoiceMatching(spokenText) {
+      if (pisaStageMode !== "READING_PROMPT" || currentQuestionIndex >= currentPassage.questions.length) return;
 
       const qData = currentPassage.questions[currentQuestionIndex];
-      const correctChoiceText = qData.choices[qData.correctIndex];
-      const correctPrefix = ['ก', 'ข', 'ค', 'ง', 'ไก่', 'ไข่', 'ควาย', 'งู'][qData.correctIndex];
+      // ล้างตัวเลขข้อ เช่น "1. " ออกก่อนเทียบ
+      const cleanPrompt = cleanThaiWord(qData.questionText.replace(/^[0-9]+\.\s*/, ""));
+      const cleanSpoken = cleanThaiWord(spokenText);
 
-      const simText = getPhoneticSimilarity(cleanThaiWord(correctChoiceText), cleanThaiWord(spokenText));
-      const simPrefix = getPhoneticSimilarity(cleanThaiWord(correctPrefix), cleanThaiWord(spokenText));
+      const sim = getPhoneticSimilarity(cleanPrompt, cleanSpoken);
 
-      if (simText >= 0.65 || simPrefix >= 0.85) {
+      // เมื่ออ่านโจทย์คำถามถูกต้อง
+      if (sim >= 0.55 || cleanSpoken.includes(cleanPrompt.substring(0, Math.min(10, cleanPrompt.length)))) {
+        handlePromptReadSuccess();
+      }
+    }
+
+    function handlePromptReadSuccess() {
+      pisaStageMode = "IDLE";
+      if (recognition) {
+        try { recognition.stop(); } catch(e) {}
+      }
+
+      // เล่นเสียงปลดล็อกโจทย์ผ่าน
+      playAudioFeedback('prompt_pass');
+
+      // เปลี่ยนสไตล์โจทย์เป็นสีเขียว
+      const qBox = document.getElementById('pisa-question-box');
+      qBox.className = "p-3.5 bg-emerald-950/60 border-2 border-emerald-500 rounded-2xl mb-4";
+      document.getElementById('pisa-question-text').className = "text-base md:text-lg font-black leading-relaxed game-font text-emerald-300";
+      document.getElementById('pisa-question-text').innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 mr-1.5"></i> ${currentPassage.questions[currentQuestionIndex].questionText}`;
+
+      // ปลดล็อกตัวเลือกคำตอบ 4 ข้อ
+      const choicesGrid = document.getElementById('pisa-choices-grid');
+      choicesGrid.className = "grid grid-cols-1 md:grid-cols-2 gap-3";
+
+      document.getElementById('pisa-instruction-text').innerHTML = `<i class="fa-solid fa-microphone mr-1 text-emerald-400"></i>ขั้นตอนที่ 2: โจทย์ผ่านแล้ว! อ่านออกเสียงคำตอบที่ถูกต้อง 1 ตัวเลือก`;
+      document.getElementById('pisa-guide-footer').textContent = "อ่านออกเสียงข้อความของตัวเลือกคำตอบที่ถูกต้อง (ไม่ต้องอ่านข้อ ก ข ค ง)";
+
+      // หน่วงเวลา 700ms ก่อนเริ่มเปิดไมค์รับฟังเสียงอ่านตัวเลือกคำตอบ
+      setTimeout(() => {
+        pisaStageMode = "READING_ANSWER";
+        if (recognition) {
+          try { recognition.start(); } catch(e) {}
+        }
+        document.getElementById('speech-live-text').textContent = "อ่านออกเสียงข้อความของตัวเลือกคำตอบได้เลย...";
+      }, 700);
+    }
+
+    // 2. ตรวจสอบการอ่านตัวเลือกคำตอบ (อ่านตัวเลือกคำตอบตรงๆ ไม่มี ก ข ค ง)
+    function checkPisaVoiceAnswerMatching(spokenText) {
+      if (pisaStageMode !== "READING_ANSWER" || currentQuestionIndex >= currentPassage.questions.length) return;
+
+      const cleanSpoken = cleanThaiWord(spokenText);
+      if (!cleanSpoken || cleanSpoken.length < 2) return;
+
+      const qData = currentPassage.questions[currentQuestionIndex];
+      const correctChoiceText = cleanThaiWord(qData.choices[qData.correctIndex]);
+
+      // ตรวจสอบกับตัวเลือกคำตอบที่ถูกต้องโดยตรง
+      const simCorrect = getPhoneticSimilarity(correctChoiceText, cleanSpoken);
+
+      if (simCorrect >= 0.65) {
         handleQuestionSuccess(qData.correctIndex);
       } else {
+        // ตรวจสอบว่าไปตรงกับตัวเลือกที่ผิดข้ออื่นหรือไม่
         qData.choices.forEach((choice, idx) => {
           if (idx !== qData.correctIndex) {
-            const simWrong = getPhoneticSimilarity(cleanThaiWord(choice), cleanThaiWord(spokenText));
-            if (simWrong >= 0.70) {
+            const simWrong = getPhoneticSimilarity(cleanThaiWord(choice), cleanSpoken);
+            if (simWrong >= 0.72) {
               handleQuestionFailed(idx);
             }
           }
@@ -1109,7 +1251,13 @@
     }
 
     function handleQuestionSuccess(correctIdx) {
-      isWaitingForQuestionAnswer = false;
+      pisaStageMode = "IDLE";
+      if (recognition) {
+        try { recognition.stop(); } catch(e) {}
+      }
+
+      // เล่นเสียงตอบถูก
+      playAudioFeedback('correct_answer');
       answeredCorrectCount++;
 
       const card = document.getElementById(`choice-card-${correctIdx}`);
@@ -1121,21 +1269,28 @@
         icon: 'success',
         title: `ข้อที่ ${currentQuestionIndex + 1} ถูกต้อง!`,
         text: 'ยอดเยี่ยมมาก พร้อมไปต่อข้อถัดไป',
-        timer: 1400,
+        timer: 1500,
         showConfirmButton: false
       }).then(() => {
         currentQuestionIndex++;
         if (currentQuestionIndex < 4) {
-          isWaitingForQuestionAnswer = true;
-          renderCurrentPisaQuestion(currentQuestionIndex);
+          renderCurrentPisaQuestionStep(currentQuestionIndex);
         } else {
+          // ตอบถูกครบทั้ง 4 ข้อ = 100%
           finalizePisaAssessment();
         }
       });
     }
 
     function handleQuestionFailed(wrongIdx) {
-      isWaitingForQuestionAnswer = false;
+      pisaStageMode = "IDLE";
+      if (recognition) {
+        try { recognition.stop(); } catch(e) {}
+      }
+
+      // เล่นเสียงตอบผิด
+      playAudioFeedback('wrong_answer');
+
       const card = document.getElementById(`choice-card-${wrongIdx}`);
       if (card) {
         card.className = "voice-choice-card p-4 bg-rose-600/90 border-2 border-rose-400 text-white rounded-2xl flex items-center space-x-3";
@@ -1143,9 +1298,9 @@
 
       Swal.fire({
         icon: 'warning',
-        title: `ตอบยังไม่ถูกต้องในข้อที่ ${currentQuestionIndex + 1}`,
-        text: 'การทดสอบคำถามสิ้นสุดลง ระบบจะบันทึกคะแนนสะสมของข้อที่ตอบถูกต้อง',
-        timer: 2300,
+        title: `คำตอบยังไม่ถูกต้องในข้อที่ ${currentQuestionIndex + 1}`,
+        text: 'การทดสอบสิ้นสุดลง ระบบจะบันทึกคะแนนสะสมของข้อที่ตอบถูกต้อง',
+        timer: 2500,
         showConfirmButton: true
       }).then(() => {
         finalizePisaAssessment();
@@ -1153,13 +1308,13 @@
     }
 
     // =========================================================================
-    // ตรวจจับคลื่นเสียงความถี่ผู้ใหญ่ (Web Audio API)
+    // ตรวจจับความถี่เสียงผู้ใหญ่ (Web Audio API)
     // =========================================================================
     function startLightweightAudioMonitor() {
       if (!audioStream) return;
       try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        audioCtx = new AudioContext();
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContextClass();
         const src = audioCtx.createMediaStreamSource(audioStream);
         analyserNode = audioCtx.createAnalyser();
         analyserNode.fftSize = 2048;
@@ -1224,7 +1379,6 @@
       document.getElementById('result-icon-container').innerHTML = icon;
       document.getElementById('result-title').textContent = `ระดับ: ${levelStr}`;
 
-      // รวมภาพหลักฐาน 3 ช็อต
       finalStitchedFilmstripBase64 = await generateStitchedTriFilmstrip();
       autoSavePisaSummary(totalScore, percent, levelStr);
     }
