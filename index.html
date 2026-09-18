@@ -884,10 +884,13 @@
         }
       };
 
-      recognition.onresult = (event) => {
-        let transcript = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
+recognition.onresult = (event) => {
+  // เพิ่มบรรทัดนี้เพื่อส่งสัญญาณว่ามีเสียงพูดเกิดขึ้นจริง (ไม่ใช่เสียงรถ)
+  updateSpeechTimestamp();
+
+  let transcript = "";
+  for (let i = event.resultIndex; i < event.results.length; i++) {
+    transcript += event.results[i][0].transcript;
         }
         transcript = transcript.trim();
         if (!transcript) return;
@@ -1360,47 +1363,89 @@
       });
     }
 
-    // =========================================================================
-    // ตรวจจับความถี่เสียงผู้ใหญ่ (Adult Voice Terminator)
-    // =========================================================================
-    function startLightweightAudioMonitor() {
-      if (!audioStream) return;
-      try {
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        audioCtx = new AudioContextClass();
-        const src = audioCtx.createMediaStreamSource(audioStream);
-        analyserNode = audioCtx.createAnalyser();
-        analyserNode.fftSize = 2048;
-        src.connect(analyserNode);
+  // ตัวแปรนับการตรวจจับความถี่ต่ำสะสมต่อเนื่อง (ป้องกัน False Alarm)
+let adultVoiceConsecutiveDetections = 0;
+let lastSpeechRecognizedTime = 0; // บันทึกเวลาที่มีการถอดรหัสคำพูดออกมาจริง
 
-        const buffer = new Float32Array(analyserNode.fftSize);
+// อัปเดตเวลาทุกครั้งที่ Web Speech API จับคำพูดได้
+function updateSpeechTimestamp() {
+  lastSpeechRecognizedTime = Date.now();
+}
 
-        antiCheatInterval = setInterval(() => {
-          // ถ้าครูปิดการตรวจจับเสียงผู้ใหญ่ไว้ ให้ข้ามการตรวจ
-          if (!isAdultVoiceDetectionEnabled()) return;
+function startLightweightAudioMonitor() {
+  if (!audioStream) return;
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new AudioContextClass();
+    const src = audioCtx.createMediaStreamSource(audioStream);
 
-          analyserNode.getFloatTimeDomainData(buffer);
-          let bestOffset = -1, bestCorrelation = 0;
-          for (let offset = 40; offset < 400; offset++) {
-            let correlation = 0;
-            for (let i = 0; i < 512; i++) {
-              correlation += buffer[i] * buffer[i + offset];
-            }
-            if (correlation > bestCorrelation) {
-              bestCorrelation = correlation;
-              bestOffset = offset;
-            }
-          }
-          const sampleRate = audioCtx.sampleRate;
-          const fundamentalFreq = sampleRate / bestOffset;
+    // 1. ใส่ High-Pass Filter ตัดเสียงเดิน เสียงฮัมแอร์ เสียงสะเทือนต่ำกว่า 85 Hz ทิ้ง
+    const highpassFilter = audioCtx.createBiquadFilter();
+    highpassFilter.type = "highpass";
+    highpassFilter.frequency.setValueAtTime(85, audioCtx.currentTime);
 
-          // ตรวจจับความถี่เสียงผู้ใหญ่ (< 180 Hz)
-          if (bestCorrelation > 0.48 && fundamentalFreq > 80 && fundamentalFreq < 175) {
-            triggerAdultVoiceViolationAndExit();
-          }
-        }, 900);
-      } catch(e) {}
-    }
+    analyserNode = audioCtx.createAnalyser();
+    analyserNode.fftSize = 2048;
+
+    // เชื่อมต่อ: Mic -> Highpass Filter -> Analyser
+    src.connect(highpassFilter);
+    highpassFilter.connect(analyserNode);
+
+    const buffer = new Float32Array(analyserNode.fftSize);
+
+    antiCheatInterval = setInterval(() => {
+      // ตรวจสอบการตั้งค่าของคุณครู
+      if (!isAdultVoiceDetectionEnabled()) return;
+
+      analyserNode.getFloatTimeDomainData(buffer);
+      
+      // คำนวณความดัง (RMS Volume) - ถ้าเสียงเบาเกินไป (เสียงรบกวนไกลๆ) ให้ข้าม
+      let sumSquares = 0;
+      for (let i = 0; i < buffer.length; i++) sumSquares += buffer[i] * buffer[i];
+      const rms = Math.sqrt(sumSquares / buffer.length);
+      if (rms < 0.04) {
+        adultVoiceConsecutiveDetections = Math.max(0, adultVoiceConsecutiveDetections - 1);
+        return; 
+      }
+
+      // คำนวณความถี่พื้นฐาน (Pitch F0) ด้วย Autocorrelation
+      let bestOffset = -1, bestCorrelation = 0;
+      for (let offset = 40; offset < 400; offset++) {
+        let correlation = 0;
+        for (let i = 0; i < 512; i++) {
+          correlation += buffer[i] * buffer[i + offset];
+        }
+        if (correlation > bestCorrelation) {
+          bestCorrelation = correlation;
+          bestOffset = offset;
+        }
+      }
+
+      const sampleRate = audioCtx.sampleRate;
+      const fundamentalFreq = sampleRate / bestOffset;
+
+      // เพิ่มเกณฑ์ความเข้มงวดของรูปคลื่นเสียงมนุษย์ (bestCorrelation > 0.65)
+      const isAdultPitchRange = (fundamentalFreq > 85 && fundamentalFreq < 170);
+      
+      // ตรวจสอบเงื่อนไขอัจฉริยะ: ต้องมีความถี่ต่ำ + มีคำพูดภาษาไทยถูกถอดรหัสออกมาในช่วง 1.2 วินาทีล่าสุด
+      const isSpeakingActualWords = (Date.now() - lastSpeechRecognizedTime) < 1200;
+
+      if (bestCorrelation > 0.65 && isAdultPitchRange && isSpeakingActualWords) {
+        adultVoiceConsecutiveDetections++;
+        
+        // ต้องตรวจพบต่อเนื่องกันอย่างน้อย 3 รอบ (~2.4 วินาที) ไม่ใช่แค่เสียงรถแวบเดียว
+        if (adultVoiceConsecutiveDetections >= 3) {
+          triggerAdultVoiceViolationAndExit();
+        }
+      } else {
+        // ค่อยๆ ลดค่าสะสมลงเมื่อเสียงหายไป
+        adultVoiceConsecutiveDetections = Math.max(0, adultVoiceConsecutiveDetections - 1);
+      }
+    }, 800);
+  } catch(e) {
+    console.warn("Audio monitor init error:", e);
+  }
+}
 
     // ยุติการทดสอบและเด้งกลับหน้าแรกทันทีเมื่อพบเสียงผู้ใหญ่
     function triggerAdultVoiceViolationAndExit() {
